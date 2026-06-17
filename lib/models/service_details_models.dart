@@ -39,13 +39,12 @@ enum StatusItem {
 
 class OrderServiceDetail {
   final String id;
-  final int nomorWo; // FK → order_service.nomor_wo
+  final int nomorWo;
   final String orderKerjaId;
   final int hargaFinal;
   final StatusItem status;
   final String? catatanTeknisi;
   final DateTime createdAt;
-  // Join fields
   final String? namaPekerjaan;
   final String? kodePekerjaan;
 

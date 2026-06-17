@@ -1,11 +1,9 @@
-// lib/viewModel/dashboard_viewmodel.dart
-
 import 'package:flutter/material.dart';
 import '../models/service_logistic_models.dart';
-import '../services/dashboard_services.dart';   // ← import service
+import '../services/dashboard_services.dart';
 
 class DashboardViewModel extends ChangeNotifier {
-  final DashboardService _service = DashboardService();  // ← pakai service
+  final DashboardService _service = DashboardService();
 
   List<ServiceLogisticsItem> serviceLogistics = [];
   bool isLoading   = false;

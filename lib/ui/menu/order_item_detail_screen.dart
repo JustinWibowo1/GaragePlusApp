@@ -566,56 +566,114 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
         ? StatusItem.dikerjakan
         : StatusItem.selesai;
 
+    final isSelesai = statusBaru == StatusItem.selesai;
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text('${statusBaru.emoji} Tandai ${statusBaru.label}?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(item.namaPekerjaan ?? '',
-                style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: catatanController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Technical notes...',
-                filled: true,
-                fillColor: AppColors.backgroundAlt,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final catatanKosong = catatanController.text.trim().isEmpty;
+          final tombolDisabled = isSelesai && catatanKosong;
+
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            title: Text('${statusBaru.emoji} Tandai ${statusBaru.label}?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.namaPekerjaan ?? '',
+                    style: const TextStyle(
+                        color: Colors.grey, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 16),
+                if (isSelesai) ...[
+                  const Text(
+                    'Apa yang dikerjakan mekanik? *',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.navy,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                TextField(
+                  controller: catatanController,
+                  maxLines: 3,
+                  onChanged: (_) => setS(() {}),
+                  decoration: InputDecoration(
+                    hintText: isSelesai
+                        ? 'Contoh: Ganti oli mesin 4L Shell Helix, filter oli diganti...'
+                        : 'Technical notes (opsional)...',
+                    hintStyle: const TextStyle(fontSize: 12),
+                    filled: true,
+                    fillColor: AppColors.backgroundAlt,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: isSelesai && catatanKosong
+                          ? const BorderSide(color: Colors.red, width: 1.5)
+                          : BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: isSelesai && catatanKosong
+                          ? const BorderSide(color: Colors.red, width: 1.5)
+                          : BorderSide(color: Colors.grey.shade200),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isSelesai && catatanKosong
+                            ? Colors.red
+                            : AppColors.primaryBlue,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                if (isSelesai && catatanKosong) ...[
+                  const SizedBox(height: 6),
+                  const Text(
+                    '⚠️ Wajib diisi sebelum menandai selesai',
+                    style: TextStyle(fontSize: 11, color: Colors.red),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal')),
+              ElevatedButton(
+                onPressed: tombolDisabled
+                    ? null
+                    : () {
+                        widget.vm.ubahStatusItem(
+                            detailId: item.id,
+                            statusBaru: statusBaru,
+                            catatan: catatanController.text.trim());
+                        Navigator.pop(context);
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: tombolDisabled
+                      ? Colors.grey.shade300
+                      : AppColors.primaryBlue,
+                  foregroundColor:
+                      tombolDisabled ? Colors.grey : Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text('Tandai ${statusBaru.label}'),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal')),
-          ElevatedButton(
-            onPressed: () {
-              widget.vm.ubahStatusItem(
-                  detailId: item.id,
-                  statusBaru: statusBaru,
-                  catatan: catatanController.text);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text('Tandai ${statusBaru.label}'),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
+
 
   // ── Dialog input data pemeriksaan sebelum cetak WO ──────────────────
   Future<void> _showCetakWorkOrderDialog(BuildContext context) async {

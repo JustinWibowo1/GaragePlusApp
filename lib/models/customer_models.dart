@@ -1,5 +1,5 @@
 class Customer {
-  final String nomorRangka; // PK
+  final String nomorRangka;
   final String nomorMesin;
   final String nomorPolisi;
   final String jenisMobil;
@@ -35,7 +35,6 @@ class Customer {
     this.deletedAt,
   });
 
-  /// ID utama customer = nomor_rangka
   String get id => nomorRangka;
 
   factory Customer.fromJson(Map<String, dynamic> json) {

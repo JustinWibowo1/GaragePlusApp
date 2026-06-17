@@ -4,7 +4,6 @@ import '../models/sparepart_models.dart';
 class SparepartServices {
   final _supabase = Supabase.instance.client;
 
-  /// Fetch sparepart berdasarkan kategori ID
   Future<List<Sparepart>> fetchByKategori(String kategoriId) async {
     try {
       final response = await _supabase

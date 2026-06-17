@@ -23,7 +23,7 @@ class Sparepart {
   });
 
   /// Label untuk ditampilkan di UI
-  String get displayName => merk != null ? '$nama ($merk)' : nama;
+  String get displayName => '$nama $merk';
 
   factory Sparepart.fromJson(Map<String, dynamic> json) {
     return Sparepart(

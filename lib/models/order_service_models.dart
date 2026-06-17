@@ -1,6 +1,6 @@
 class OrderServiceSummary {
-  final int nomorWo; // PK — bigint auto-increment
-  final String customerId; // FK → customer.nomor_rangka
+  final int nomorWo;
+  final String customerId;
   final int totalTagihan;
   final String status;
   final int kilometer;
