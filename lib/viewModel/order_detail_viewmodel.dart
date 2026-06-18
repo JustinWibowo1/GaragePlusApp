@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/order_service_models.dart';
 import '../models/service_details_models.dart';
@@ -9,10 +10,14 @@ class OrderDetailViewModel extends ChangeNotifier {
 
   List<OrderServiceSummary> daftarOrder    = [];
   List<OrderServiceDetail>  daftarDetail   = [];
-  List<OrderKerja>          _serviceRules  = []; // ← rules dari order_kerja
-  Map<String, int>          _lastServiceOdometer = {}; // ← melacak km terakhir tiap pekerjaan diselesaikan
+  List<OrderKerja>          _serviceRules  = [];
+  Map<String, int>          _lastServiceOdometer = {};
   bool    isLoading    = false;
   String? errorMessage;
+
+  // ── Metadata kendaraan (untuk filter kompatibilitas reminder) ──
+  String _tipeMesin     = '';
+  String _tipeTransmisi = '';
 
   // ── Getters progress ──────────────────────────────────────
   int    get totalItem   => daftarDetail.length;
@@ -30,20 +35,29 @@ class OrderDetailViewModel extends ChangeNotifier {
       final interval = rule.intervalKm;
       if (interval == null || interval <= 0) continue;
 
-      // Kapan pekerjaan ini terakhir dikerjakan?
+      // ── FIX #3: Filter berdasarkan kompatibilitas mesin & transmisi ──
+      // Hanya tampilkan reminder jika mesin/transmisi kendaraan ini kompatibel,
+      // atau jika daftar kompatibilitas kosong (berlaku untuk semua).
+      if (_tipeMesin.isNotEmpty && rule.kompatibilitasMesin.isNotEmpty) {
+        if (!rule.kompatibilitasMesin.contains(_tipeMesin)) continue;
+      }
+      if (_tipeTransmisi.isNotEmpty && rule.kompatibilitasTransmisi.isNotEmpty) {
+        if (!rule.kompatibilitasTransmisi.contains(_tipeTransmisi)) continue;
+      }
+
       final lastDoneOdometer = _lastServiceOdometer[rule.id];
-      
+
       int kmBerikutnya;
 
       if (lastDoneOdometer != null) {
-        // Jika sudah pernah dikerjakan, target berikutnya = terakhir dikerjakan + interval
+        // Sudah pernah dikerjakan → target = terakhir dikerjakan + interval
         kmBerikutnya = lastDoneOdometer + interval;
       } else {
-        // Jika belum pernah direkam, gunakan fallback modulo
-        final kmSejak = kmTerakhir % interval;
-        kmBerikutnya = kmSejak == 0
-            ? kmTerakhir
-            : (kmTerakhir - kmSejak + interval);
+        // ── FIX #1: Kendaraan baru / belum pernah direkam ──
+        // Jadwalkan dari km sekarang + interval, sehingga tidak langsung OVERDUE.
+        // Sebelumnya menggunakan modulo yang menghasilkan false-positive OVERDUE
+        // ketika km tepat merupakan kelipatan interval (mis. 50.000 % 5.000 = 0).
+        kmBerikutnya = kmTerakhir + interval;
       }
 
       result.add(ServiceReminderItem(
@@ -83,7 +97,14 @@ class OrderDetailViewModel extends ChangeNotifier {
 
   // ── Fetch: orders by customer ─────────────────────────────
 
-  Future<void> muatOrderByCustomer(String customerId) async {
+  Future<void> muatOrderByCustomer(
+    String customerId, {
+    String tipeMesin     = '',
+    String tipeTransmisi = '',
+  }) async {
+    // Simpan metadata kendaraan untuk filter kompatibilitas
+    _tipeMesin     = tipeMesin;
+    _tipeTransmisi = tipeTransmisi;
     isLoading    = true;
     errorMessage = null;
     notifyListeners();
@@ -114,16 +135,25 @@ class OrderDetailViewModel extends ChangeNotifier {
             .eq('status', 'Selesai'),
       ]);
 
-      // Odometer dari tabel customer
+      // ── FIX #2: Gunakan km tertinggi antara odometer_terakhir dan km dari WO ──
+      // Mencegah _kmTerakhir stale jika odometer_terakhir belum diperbarui.
       final customerRow = results[2] as Map<String, dynamic>?;
-      _kmTerakhir = customerRow?['odometer_terakhir'] as int? ?? 0;
+      final kmDariCustomer = customerRow?['odometer_terakhir'] as int? ?? 0;
       final response = results[0] as List<dynamic>;
-      print('📦 Response mentah: $response');
-      print('📊 Jumlah data: ${response.length}');
 
       daftarOrder = response
           .map((item) => OrderServiceSummary.fromJson(item as Map<String, dynamic>))
           .toList();
+
+      final kmDariOrder = daftarOrder.isEmpty
+          ? 0
+          : daftarOrder.map((o) => o.kilometer).reduce(max);
+
+      // Ambil nilai terbesar agar km tidak mundur
+      _kmTerakhir = max(kmDariCustomer, kmDariOrder);
+
+      print('📦 Response mentah: $response');
+      print('📊 Jumlah data: ${response.length}');
 
 
       // 4. Proses riwayat item selesai untuk reset warning

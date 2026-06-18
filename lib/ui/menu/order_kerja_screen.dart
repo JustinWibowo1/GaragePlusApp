@@ -1,8 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/order_kerja_models.dart';
 import '../../viewModel/order_kerja_viewmodel.dart';
 import '../../app_colors.dart';
 import '../../component_apps.dart';
+
+class ThousandsSeparatorFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digitsOnly = newValue.text.replaceAll('.', '');
+    if (digitsOnly.isEmpty) return newValue.copyWith(text: '');
+
+    final formatted = digitsOnly.replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+
+    return newValue.copyWith(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
 
 class OrderKerjaScreen extends StatefulWidget {
   final String customerId; // nomor_rangka
@@ -15,7 +37,7 @@ class OrderKerjaScreen extends StatefulWidget {
   final String nomorTelepon;
   final String alamat;
   final String nomorMesin;
-  final int    odometerTerakhir; // ← dari tabel customer
+  final int odometerTerakhir; // ← dari tabel customer
 
   const OrderKerjaScreen({
     Key? key,
@@ -38,19 +60,23 @@ class OrderKerjaScreen extends StatefulWidget {
 
 class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
   final OrderKerjaViewModel _orderKerjaViewModel = OrderKerjaViewModel();
-  final TextEditingController _keluhanController    = TextEditingController();
-  final TextEditingController _kilometerController  = TextEditingController();
+  final TextEditingController _keluhanController = TextEditingController();
+  final TextEditingController _kilometerController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _orderKerjaViewModel.muatKerjaUntukMobil(
-      mesin     : widget.mesinMobil,
-      transmisi : widget.transmisiMobil,
+      mesin: widget.mesinMobil,
+      transmisi: widget.transmisiMobil,
     );
     // Pre-fill kilometer dari odometer terakhir yang sudah tersimpan
     if (widget.odometerTerakhir > 0) {
-      _kilometerController.text = widget.odometerTerakhir.toString();
+      final formatted = widget.odometerTerakhir.toString().replaceAllMapped(
+            RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+            (m) => '${m[1]}.',
+          );
+      _kilometerController.text = formatted;
       _orderKerjaViewModel.setKilometer(widget.odometerTerakhir);
     }
   }
@@ -87,7 +113,8 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -100,11 +127,14 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
               const SizedBox(height: 4),
               Wrap(
                 spacing: 6,
-                children: jasa.kategoriSparepart.map((k) => Chip(
-                  label: Text(k.kategoriNama, style: const TextStyle(fontSize: 11)),
-                  backgroundColor: Colors.blue.shade50,
-                  visualDensity: VisualDensity.compact,
-                )).toList(),
+                children: jasa.kategoriSparepart
+                    .map((k) => Chip(
+                          label: Text(k.kategoriNama,
+                              style: const TextStyle(fontSize: 11)),
+                          backgroundColor: Colors.blue.shade50,
+                          visualDensity: VisualDensity.compact,
+                        ))
+                    .toList(),
               ),
             ],
           ),
@@ -118,7 +148,8 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (_orderKerjaViewModel.daftarSparepart.isEmpty) {
-                  return const Center(child: Text('Tidak ada sparepart tersedia.'));
+                  return const Center(
+                      child: Text('Tidak ada sparepart tersedia.'));
                 }
                 return Column(
                   children: [
@@ -145,14 +176,16 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                         itemCount: _orderKerjaViewModel.daftarSparepart.length,
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, index) {
-                          final sp = _orderKerjaViewModel.daftarSparepart[index];
+                          final sp =
+                              _orderKerjaViewModel.daftarSparepart[index];
                           final isSelected = tempSelected.containsKey(sp.id);
                           final entry = tempSelected[sp.id];
 
                           return ListTile(
                             selected: isSelected,
                             leading: Container(
-                              width: 40, height: 40,
+                              width: 40,
+                              height: 40,
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? Colors.blue.shade100
@@ -166,17 +199,21 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                               ),
                             ),
                             title: Text(sp.displayName,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 13)),
                             subtitle: Text(
                               'Rp ${_formatRupiah(sp.hargaJual)} • Stok: ${sp.stok} • ${sp.kategoriNama ?? ""}',
-                              style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                              style: TextStyle(
+                                  color: Colors.grey[500], fontSize: 11),
                             ),
                             trailing: isSelected
                                 ? Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.remove_circle_outline, size: 20),
+                                        icon: const Icon(
+                                            Icons.remove_circle_outline,
+                                            size: 20),
                                         onPressed: () {
                                           setDialogState(() {
                                             if (entry!.qty > 1) {
@@ -188,9 +225,12 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                                         },
                                       ),
                                       Text('${entry?.qty ?? 1}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold)),
                                       IconButton(
-                                        icon: const Icon(Icons.add_circle_outline, size: 20),
+                                        icon: const Icon(
+                                            Icons.add_circle_outline,
+                                            size: 20),
                                         onPressed: () {
                                           setDialogState(() {
                                             entry!.qty++;
@@ -205,7 +245,8 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                                 if (isSelected) {
                                   tempSelected.remove(sp.id);
                                 } else {
-                                  tempSelected[sp.id] = SparepartEntry(sparepart: sp);
+                                  tempSelected[sp.id] =
+                                      SparepartEntry(sparepart: sp);
                                 }
                               });
                             },
@@ -216,10 +257,9 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                     if (tempSelected.isNotEmpty) ...[
                       const Divider(),
                       Text(
-                        '${tempSelected.length} item dipilih — Rp ${_formatRupiah(
-                          tempSelected.values.fold<int>(0, (sum, e) => sum + e.subtotal)
-                        )}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        '${tempSelected.length} item dipilih — Rp ${_formatRupiah(tempSelected.values.fold<int>(0, (sum, e) => sum + e.subtotal))}',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ],
                   ],
@@ -240,8 +280,10 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                 );
                 Navigator.pop(context);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[700]),
-              child: const Text('Konfirmasi', style: TextStyle(color: Colors.white)),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.blue[700]),
+              child: const Text('Konfirmasi',
+                  style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -251,25 +293,31 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
 
   String _formatRupiah(int value) {
     return value.toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
+          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
   }
 
   Widget _buildInfoColumn(String title, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
+        Text(
+          title,
           style: const TextStyle(
-              fontSize: 10, color: Colors.grey,
-              fontWeight: FontWeight.bold, letterSpacing: 1.2),
+              fontSize: 10,
+              color: Colors.grey,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2),
         ),
         const SizedBox(height: 6),
-        Text(value,
+        Text(
+          value,
           style: const TextStyle(
-              fontSize: 15, color: AppColors.navy,
-              fontWeight: FontWeight.w800, letterSpacing: 0.5),
+              fontSize: 15,
+              color: AppColors.navy,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5),
         ),
       ],
     );
@@ -283,7 +331,8 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         title: const Text('Garage Plus',
-            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+            style:
+                TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -297,7 +346,10 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Order Kerja',
-                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.navy)),
+                        style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.navy)),
                     const SizedBox(height: 24),
 
                     // ── Card Info Mobil ──
@@ -307,59 +359,89 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5))
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            height: 120, width: double.infinity,
+                            height: 120,
+                            width: double.infinity,
                             padding: const EdgeInsets.all(24),
                             decoration: const BoxDecoration(
                               borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                                  topLeft: Radius.circular(16),
+                                  topRight: Radius.circular(16)),
                               gradient: const LinearGradient(
-                                  colors: [AppColors.navyDeep, AppColors.navyDark],
-                                  begin: Alignment.topLeft, end: Alignment.bottomRight),
+                                  colors: [
+                                    AppColors.navyDeep,
+                                    AppColors.navyDark
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight),
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.baseline,
                                   textBaseline: TextBaseline.alphabetic,
                                   children: [
                                     Text(widget.namaMobil.toUpperCase(),
-                                        style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                                    Text('${widget.namaPemilik} (${widget.nomorTelepon})',
-                                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5)),
+                                    Text(
+                                        '${widget.namaPemilik} (${widget.nomorTelepon})',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600)),
                                   ],
                                 ),
                                 const SizedBox(height: 6),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.baseline,
                                   textBaseline: TextBaseline.alphabetic,
                                   children: [
-                                    Text('${widget.mesinMobil} • ${widget.transmisiMobil}',
-                                        style: const TextStyle(color: Colors.white, fontSize: 14, letterSpacing: 0.5)),
+                                    Text(
+                                        '${widget.mesinMobil} • ${widget.transmisiMobil}',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            letterSpacing: 0.5)),
                                     Text(widget.alamat,
-                                        style: const TextStyle(color: Colors.white, fontSize: 14)),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 14)),
                                   ],
                                 ),
                               ],
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 20),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _buildInfoColumn('Nomor Polisi', widget.nomorPolisi),
-                                _buildInfoColumn('Nomor Rangka', widget.nomorRangka),
-                                _buildInfoColumn('Nomor Mesin', widget.nomorMesin),
+                                _buildInfoColumn(
+                                    'Nomor Polisi', widget.nomorPolisi),
+                                _buildInfoColumn(
+                                    'Nomor Rangka', widget.nomorRangka),
+                                _buildInfoColumn(
+                                    'Nomor Mesin', widget.nomorMesin),
                                 _buildInfoColumn('ODOMETER', '- KM'),
                               ],
                             ),
@@ -377,27 +459,39 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5))
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(children: const [
-                            Icon(Icons.edit_note, color: AppColors.navy, size: 24),
+                            Icon(Icons.edit_note,
+                                color: AppColors.navy, size: 24),
                             SizedBox(width: 8),
                             Text('Catatan Keluhan Konsumen',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.navy)),
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.navy)),
                           ]),
                           const SizedBox(height: 16),
                           TextField(
                             controller: _keluhanController,
                             maxLines: 5,
                             decoration: InputDecoration(
-                              hintText: 'Dokumentasikan keluhan spesifik atau permintaan khusus dari pelanggan di sini...',
-                              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                              filled: true, fillColor: Colors.grey[50],
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              hintText:
+                                  'Dokumentasikan keluhan spesifik atau permintaan khusus dari pelanggan di sini...',
+                              hintStyle: TextStyle(
+                                  color: Colors.grey[400], fontSize: 14),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none),
                               contentPadding: const EdgeInsets.all(20),
                             ),
                           ),
@@ -432,9 +526,9 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                               Text(
                                 'Odometer Saat Ini',
                                 style: TextStyle(
-                                  fontSize  : 18,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color     : AppColors.navy,
+                                  color: AppColors.navy,
                                 ),
                               ),
                             ],
@@ -451,12 +545,15 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                             children: [
                               Expanded(
                                 child: TextField(
-                                  controller   : _kilometerController,
-                                  keyboardType : TextInputType.number,
+                                  controller: _kilometerController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    ThousandsSeparatorFormatter(),
+                                  ],
                                   style: const TextStyle(
-                                    fontSize  : 20,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.w700,
-                                    color     : AppColors.navy,
+                                    color: AppColors.navy,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: '0',
@@ -483,9 +580,9 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                                         horizontal: 16, vertical: 16),
                                   ),
                                   onChanged: (val) {
-                                    final km = int.tryParse(
-                                            val.replaceAll('.', '')) ??
-                                        0;
+                                    final km =
+                                        int.tryParse(val.replaceAll('.', '')) ??
+                                            0;
                                     _orderKerjaViewModel.setKilometer(km);
                                   },
                                 ),
@@ -509,7 +606,7 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                                       children: [
                                         Icon(
                                           Icons.speed_rounded,
-                                          size : 20,
+                                          size: 20,
                                           color: km > 0
                                               ? Colors.white
                                               : Colors.grey.shade400,
@@ -518,9 +615,9 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                                         Text(
                                           km > 0 ? '✓ Tercatat' : 'Belum',
                                           style: TextStyle(
-                                            fontSize  : 11,
+                                            fontSize: 11,
                                             fontWeight: FontWeight.w700,
-                                            color     : km > 0
+                                            color: km > 0
                                                 ? Colors.white
                                                 : Colors.grey.shade400,
                                           ),
@@ -546,10 +643,14 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(children: const [
-                              Icon(Icons.category, color: AppColors.navy, size: 20),
+                              Icon(Icons.category,
+                                  color: AppColors.navy, size: 20),
                               SizedBox(width: 8),
                               Text('Service Catalog',
-                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.navy)),
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.navy)),
                             ]),
                             SizedBox(
                               width: 250,
@@ -565,38 +666,59 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                           listenable: _orderKerjaViewModel,
                           builder: (context, child) {
                             if (_orderKerjaViewModel.isLoading) {
-                              return const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator()));
+                              return const Center(
+                                  child: Padding(
+                                      padding: EdgeInsets.all(32.0),
+                                      child: CircularProgressIndicator()));
                             }
                             if (_orderKerjaViewModel.errorMessage != null) {
-                              return Center(child: Text(_orderKerjaViewModel.errorMessage!, style: const TextStyle(color: Colors.red)));
+                              return Center(
+                                  child: Text(
+                                      _orderKerjaViewModel.errorMessage!,
+                                      style:
+                                          const TextStyle(color: Colors.red)));
                             }
-                            if (_orderKerjaViewModel.daftarKerjaTampil.isEmpty) {
+                            if (_orderKerjaViewModel
+                                .daftarKerjaTampil.isEmpty) {
                               return Container(
-                                width: double.infinity, padding: const EdgeInsets.all(32),
-                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                                child: const Center(child: Text('Pekerjaan tidak ditemukan.')),
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(32),
+                                decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16)),
+                                child: const Center(
+                                    child: Text('Pekerjaan tidak ditemukan.')),
                               );
                             }
                             return GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 2.5,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 2.5,
                               ),
-                              itemCount: _orderKerjaViewModel.daftarKerjaTampil.length,
+                              itemCount:
+                                  _orderKerjaViewModel.daftarKerjaTampil.length,
                               itemBuilder: (context, index) {
-                                final jasa = _orderKerjaViewModel.daftarKerjaTampil[index];
-                                final isSelected = _orderKerjaViewModel.isJasaDipilih(jasa);
+                                final jasa = _orderKerjaViewModel
+                                    .daftarKerjaTampil[index];
+                                final isSelected =
+                                    _orderKerjaViewModel.isJasaDipilih(jasa);
                                 return ServiceCardItem(
                                     jasa: jasa,
                                     isSelected: isSelected,
                                     onTap: () {
                                       if (isSelected) {
-                                        _orderKerjaViewModel.hapusDariKeranjang(jasa);
+                                        _orderKerjaViewModel
+                                            .hapusDariKeranjang(jasa);
                                       } else if (jasa.requiresSparepart) {
                                         _tampilDialogPilihSparepart(jasa);
                                       } else {
-                                        _orderKerjaViewModel.toggleKeranjang(jasa);
+                                        _orderKerjaViewModel
+                                            .toggleKeranjang(jasa);
                                       }
                                     });
                               },
@@ -618,9 +740,11 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                 child: Column(
                   children: [
                     Container(
-                      height: 80, width: double.infinity,
+                      height: 80,
+                      width: double.infinity,
                       decoration: BoxDecoration(
-                          color: Colors.white, borderRadius: BorderRadius.circular(12),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey.shade200)),
                       child: const Center(child: Text('Area Teknisi')),
                     ),
@@ -631,110 +755,167 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                         final keranjang = _orderKerjaViewModel.keranjangJasa;
 
                         return Container(
-                          width: double.infinity, padding: const EdgeInsets.all(24),
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                              color: AppColors.navyDarkest, borderRadius: BorderRadius.circular(16)),
+                              color: AppColors.navyDarkest,
+                              borderRadius: BorderRadius.circular(16)),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('Ringkasan Order',
-                                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
                               const SizedBox(height: 24),
                               if (keranjang.isEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 24),
                                   child: Text('Belum ada jasa yang dipilih.',
-                                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontStyle: FontStyle.italic)),
+                                      style: TextStyle(
+                                          color: Colors.white.withOpacity(0.5),
+                                          fontStyle: FontStyle.italic)),
                                 ),
                               ...keranjang.map((jasa) {
-                                final spareparts = _orderKerjaViewModel.sparepartPerPekerjaan[jasa.id] ?? [];
+                                final spareparts = _orderKerjaViewModel
+                                        .sparepartPerPekerjaan[jasa.id] ??
+                                    [];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 16),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Expanded(child: Text('• ${jasa.nama}',
-                                              style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14))),
-                                          Text('Rp ${_formatRupiah(jasa.estimasiHarga)}',
-                                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                          Expanded(
+                                              child: Text('• ${jasa.nama}',
+                                                  style: TextStyle(
+                                                      color: Colors.white
+                                                          .withOpacity(0.9),
+                                                      fontSize: 14))),
+                                          Text(
+                                              'Rp ${_formatRupiah(jasa.estimasiHarga)}',
+                                              style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13)),
                                         ],
                                       ),
                                       ...spareparts.map((sp) => Padding(
-                                        padding: const EdgeInsets.only(left: 16, top: 4),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text('↳ ${sp.sparepart.displayName} x${sp.qty}',
-                                                style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
-                                            Text('Rp ${_formatRupiah(sp.subtotal)}',
-                                                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
-                                          ],
-                                        ),
-                                      )),
+                                            padding: const EdgeInsets.only(
+                                                left: 16, top: 4),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Text(
+                                                    '↳ ${sp.sparepart.displayName} x${sp.qty}',
+                                                    style: TextStyle(
+                                                        color: Colors.white
+                                                            .withOpacity(0.6),
+                                                        fontSize: 12)),
+                                                Text(
+                                                    'Rp ${_formatRupiah(sp.subtotal)}',
+                                                    style: TextStyle(
+                                                        color: Colors.white
+                                                            .withOpacity(0.7),
+                                                        fontSize: 12)),
+                                              ],
+                                            ),
+                                          )),
                                     ],
                                   ),
                                 );
                               }).toList(),
                               const Divider(color: Colors.white24, height: 32),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text('Total Estimasi',
-                                      style: TextStyle(color: Colors.white, fontSize: 16)),
-                                  Text('Rp ${_formatRupiah(_orderKerjaViewModel.totalEstimasi)}',
-                                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 16)),
+                                  Text(
+                                      'Rp ${_formatRupiah(_orderKerjaViewModel.totalEstimasi)}',
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               const SizedBox(height: 24),
                               SizedBox(
-                                width: double.infinity, height: 50,
+                                width: double.infinity,
+                                height: 50,
                                 child: ElevatedButton(
-                                  onPressed: keranjang.isEmpty ? null : () async {
-                                    // Validasi kilometer
-                                    if (_orderKerjaViewModel.kilometer <= 0) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('⚠️ Masukkan kilometer kendaraan terlebih dahulu'),
-                                          backgroundColor: Colors.orange,
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Menyimpan pesanan...')),
-                                    );
-                                    bool sukses = await _orderKerjaViewModel.simpanOrderKerja(
-                                      customerId     : widget.customerId,
-                                      catatanKeluhan : _keluhanController.text,
-                                    );
-                                    if (sukses) {
-                                      _keluhanController.clear();
-                                      _kilometerController.clear();
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content        : Text('✅ Order berhasil disimpan!'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content        : Text('❌ Gagal menyimpan order.'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  },
+                                  onPressed: keranjang.isEmpty
+                                      ? null
+                                      : () async {
+                                          // Validasi kilometer
+                                          if (_orderKerjaViewModel.kilometer <=
+                                              0) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    '⚠️ Masukkan kilometer kendaraan terlebih dahulu'),
+                                                backgroundColor: Colors.orange,
+                                              ),
+                                            );
+                                            return;
+                                          }
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text(
+                                                    'Menyimpan pesanan...')),
+                                          );
+                                          bool sukses =
+                                              await _orderKerjaViewModel
+                                                  .simpanOrderKerja(
+                                            customerId: widget.customerId,
+                                            catatanKeluhan:
+                                                _keluhanController.text,
+                                          );
+                                          if (sukses) {
+                                            _keluhanController.clear();
+                                            _kilometerController.clear();
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    '✅ Order berhasil disimpan!'),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    '❌ Gagal menyimpan order.'),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
+                                        },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blue[600],
-                                    disabledBackgroundColor: Colors.white.withOpacity(0.1),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    disabledBackgroundColor:
+                                        Colors.white.withOpacity(0.1),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8)),
                                   ),
                                   child: const Text('Simpan Order',
-                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
                                 ),
                               ),
                             ],
@@ -758,7 +939,12 @@ class ServiceCardItem extends StatefulWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const ServiceCardItem({Key? key, required this.jasa, required this.isSelected, required this.onTap}) : super(key: key);
+  const ServiceCardItem(
+      {Key? key,
+      required this.jasa,
+      required this.isSelected,
+      required this.onTap})
+      : super(key: key);
 
   @override
   State<ServiceCardItem> createState() => _ServiceCardItemState();
@@ -769,8 +955,9 @@ class _ServiceCardItemState extends State<ServiceCardItem> {
 
   String _formatRupiah(int value) {
     return value.toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.',
-    );
+          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
   }
 
   @override
@@ -780,14 +967,23 @@ class _ServiceCardItemState extends State<ServiceCardItem> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: widget.isSelected ? Colors.blue.shade50.withOpacity(0.5) : Colors.white,
+        color: widget.isSelected
+            ? Colors.blue.shade50.withOpacity(0.5)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: widget.isSelected ? Colors.blue.shade600 : (isHovered ? Colors.blue.shade300 : Colors.grey.shade200),
+          color: widget.isSelected
+              ? Colors.blue.shade600
+              : (isHovered ? Colors.blue.shade300 : Colors.grey.shade200),
           width: widget.isSelected ? 2 : 1,
         ),
         boxShadow: isHovered
-            ? [BoxShadow(color: Colors.blue.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))]
+            ? [
+                BoxShadow(
+                    color: Colors.blue.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4))
+              ]
             : [],
       ),
       child: Column(
@@ -810,7 +1006,9 @@ class _ServiceCardItemState extends State<ServiceCardItem> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      widget.isSelected ? Icons.check : (isHovered ? Icons.add : Icons.build),
+                      widget.isSelected
+                          ? Icons.check
+                          : (isHovered ? Icons.add : Icons.build),
                       color: isActive ? Colors.white : Colors.blue[800],
                       size: 20,
                     ),
@@ -818,18 +1016,25 @@ class _ServiceCardItemState extends State<ServiceCardItem> {
                 ),
               ),
               Text('Rp ${_formatRupiah(widget.jasa.estimasiHarga)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.grey)),
             ],
           ),
           const Spacer(),
-          Text(widget.jasa.nama,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.navy),
-            maxLines: 2, overflow: TextOverflow.ellipsis,
+          Text(
+            widget.jasa.nama,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: AppColors.navy),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
           Row(
             children: [
-              Text(widget.jasa.kode, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+              Text(widget.jasa.kode,
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12)),
               if (widget.jasa.requiresSparepart) ...[
                 const SizedBox(width: 8),
                 Icon(Icons.inventory_2, size: 12, color: Colors.orange[400]),

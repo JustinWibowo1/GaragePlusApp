@@ -82,11 +82,11 @@ class OrderKerjaViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final kategoriIds = jasa.kategoriSparepart
-          .map((k) => k.kategoriId)
-          .toList();
+      final kategoriIds =
+          jasa.kategoriSparepart.map((k) => k.kategoriId).toList();
 
-      daftarSparepart = await _sparepartServices.fetchByKategoriList(kategoriIds);
+      daftarSparepart =
+          await _sparepartServices.fetchByKategoriList(kategoriIds);
       print('✅ Sparepart dimuat: ${daftarSparepart.length} item');
     } catch (e) {
       print('❌ Gagal muat sparepart: $e');
@@ -174,11 +174,11 @@ class OrderKerjaViewModel extends ChangeNotifier {
       final header = await supabase
           .from('order_service')
           .insert({
-            'customer_id'     : customerId,
-            'kilometer'       : _kilometer,
-            'catatan_keluhan' : catatanKeluhan,
-            'total_tagihan'   : totalEstimasi,
-            'status'          : 'Menunggu',
+            'customer_id': customerId,
+            'kilometer': _kilometer,
+            'catatan_keluhan': catatanKeluhan,
+            'total_tagihan': totalEstimasi,
+            'status': 'Menunggu',
           })
           .select('nomor_wo')
           .single();
@@ -187,15 +187,16 @@ class OrderKerjaViewModel extends ChangeNotifier {
       for (final jasa in keranjangJasa) {
         final sparepartItems = sparepartPerPekerjaan[jasa.id] ?? [];
         final totalSparepart = sparepartItems.fold<int>(
-          0, (sum, sp) => sum + sp.subtotal,
+          0,
+          (sum, sp) => sum + sp.subtotal,
         );
 
         final detail = await supabase
             .from('order_service_detail')
             .insert({
-              'nomor_wo'          : nomorWo,
-              'order_kerja_id'    : jasa.id,
-              'harga_final'       : jasa.estimasiHarga + totalSparepart,
+              'nomor_wo': nomorWo,
+              'order_kerja_id': jasa.id,
+              'harga_final': jasa.estimasiHarga + totalSparepart,
             })
             .select('id')
             .single();
@@ -204,26 +205,21 @@ class OrderKerjaViewModel extends ChangeNotifier {
 
         // 3. Insert sparepart per pekerjaan
         for (final entry in sparepartItems) {
-          await supabase
-              .from('sparepart_service')
-              .insert({
-                'order_service_detail_id' : detailId,
-                'sparepart_id'            : entry.sparepart.id,
-                'nama_item_snapshot'      : entry.sparepart.displayName,
-                'spesifikasi_snapshot'    : entry.sparepart.merk,
-                'harga_satuan'            : entry.sparepart.hargaJual,
-                'qty'                     : entry.qty,
-              });
+          await supabase.from('sparepart_service').insert({
+            'order_service_detail_id': detailId,
+            'sparepart_id': entry.sparepart.id,
+            'nama_item_snapshot': entry.sparepart.displayName,
+            'spesifikasi_snapshot': entry.sparepart.merk,
+            'harga_satuan': entry.sparepart.hargaJual,
+            'qty': entry.qty,
+          });
         }
       }
 
-      await supabase
-          .from('customer')
-          .update({
-            'odometer_terakhir'   : _kilometer,
-            'tgl_service_terakhir': DateTime.now().toIso8601String(),
-          })
-          .eq('nomor_rangka', customerId);
+      await supabase.from('customer').update({
+        'odometer_terakhir': _kilometer,
+        'tgl_service_terakhir': DateTime.now().toIso8601String(),
+      }).eq('nomor_rangka', customerId);
       print('✅ Odometer customer diperbarui: $_kilometer km');
 
       // 5. Reset state
@@ -232,7 +228,6 @@ class OrderKerjaViewModel extends ChangeNotifier {
       _kilometer = 0;
       notifyListeners();
       return true;
-
     } catch (e) {
       print('❌ Gagal simpan: $e');
       return false;

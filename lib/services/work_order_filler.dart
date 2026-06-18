@@ -95,12 +95,8 @@ class WorkOrderFiller {
     final pekerjaanTextDenganCatatan = selesaiDetails.isEmpty
         ? '-'
         : selesaiDetails.asMap().entries.map((e) {
-            final nama = e.value.namaPekerjaan ?? '-';
-            final cat = e.value.catatanTeknisi;
-            if (cat != null && cat.trim().isNotEmpty) {
-              return '${e.key + 1}. $nama (${cat.trim()})';
-            }
-            return '${e.key + 1}. $nama';
+            final cat = e.value.catatanTeknisi?.trim() ?? '-';
+            return '${e.key + 1}. $cat';
           }).join('\n');
 
     // Ringkasan oli & cairan dalam satu baris

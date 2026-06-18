@@ -28,19 +28,23 @@ class OrderDetailScreen extends StatefulWidget {
   final String tahun;
   final String noRangka;
   final String noMesin;
+  final String tipeMesin;     // untuk filter reminder
+  final String tipeTransmisi; // untuk filter reminder
 
   const OrderDetailScreen({
     Key? key,
     required this.customerId,
     required this.nomorPolisi,
     required this.namaPemilik,
-    this.telepon   = '',
-    this.alamat    = '',
-    this.merkMobil = '',
-    this.typeMobil = '',
-    this.tahun     = '',
-    this.noRangka  = '',
-    this.noMesin   = '',
+    this.telepon       = '',
+    this.alamat        = '',
+    this.merkMobil     = '',
+    this.typeMobil     = '',
+    this.tahun         = '',
+    this.noRangka      = '',
+    this.noMesin       = '',
+    this.tipeMesin     = '',
+    this.tipeTransmisi = '',
   }) : super(key: key);
 
   @override
@@ -55,7 +59,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _vm.muatOrderByCustomer(widget.customerId);
+    _vm.muatOrderByCustomer(
+      widget.customerId,
+      tipeMesin     : widget.tipeMesin,
+      tipeTransmisi : widget.tipeTransmisi,
+    );
     _searchCtrl.addListener(
       () => setState(() => _searchQuery = _searchCtrl.text.toLowerCase()),
     );

@@ -10,6 +10,8 @@ class Customer {
   final String namaPemilik;
   final String? alamatPemilik;
   final String? noTelepon;
+  final String? namaPerusahaan;
+  final String? kotaPemilik;
   final int odometerTerakhir;
   final DateTime? tglServiceTerakhir;
   final DateTime createdAt;
@@ -28,6 +30,8 @@ class Customer {
     required this.namaPemilik,
     this.alamatPemilik,
     this.noTelepon,
+    this.namaPerusahaan,
+    this.kotaPemilik,
     this.odometerTerakhir = 0,
     this.tglServiceTerakhir,
     required this.createdAt,
@@ -50,6 +54,8 @@ class Customer {
       namaPemilik       : json['nama_pemilik'] as String,
       alamatPemilik     : json['alamat_pemilik'] as String?,
       noTelepon         : json['no_telepon'] as String?,
+      namaPerusahaan    : json['nama_perusahaan'] as String?,
+      kotaPemilik       : json['kota_pemilik'] as String?,
       odometerTerakhir  : json['odometer_terakhir'] as int? ?? 0,
       tglServiceTerakhir: json['tgl_service_terakhir'] != null
           ? DateTime.parse(json['tgl_service_terakhir'] as String)

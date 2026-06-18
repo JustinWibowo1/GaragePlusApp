@@ -16,9 +16,7 @@ class SparepartServices {
           .eq('is_active', true)
           .order('nama', ascending: true);
 
-      return response
-          .map((item) => Sparepart.fromJson(item))
-          .toList();
+      return response.map((item) => Sparepart.fromJson(item)).toList();
     } catch (e) {
       print('❌ Error fetch sparepart by kategori: $e');
       return [];
@@ -40,9 +38,7 @@ class SparepartServices {
           .eq('is_active', true)
           .order('nama', ascending: true);
 
-      return response
-          .map((item) => Sparepart.fromJson(item))
-          .toList();
+      return response.map((item) => Sparepart.fromJson(item)).toList();
     } catch (e) {
       print('❌ Error fetch sparepart by kategori list: $e');
       return [];
@@ -52,18 +48,12 @@ class SparepartServices {
   /// Fetch semua sparepart aktif
   Future<List<Sparepart>> fetchSemua() async {
     try {
-      final response = await _supabase
-          .from('sparepart')
-          .select('''
+      final response = await _supabase.from('sparepart').select('''
             *,
             kategori_sparepart ( nama )
-          ''')
-          .eq('is_active', true)
-          .order('nama', ascending: true);
+          ''').eq('is_active', true).order('nama', ascending: true);
 
-      return response
-          .map((item) => Sparepart.fromJson(item))
-          .toList();
+      return response.map((item) => Sparepart.fromJson(item)).toList();
     } catch (e) {
       print('❌ Error fetch semua sparepart: $e');
       return [];
@@ -83,9 +73,7 @@ class SparepartServices {
           .ilike('nama', '%$keyword%')
           .order('nama', ascending: true);
 
-      return response
-          .map((item) => Sparepart.fromJson(item))
-          .toList();
+      return response.map((item) => Sparepart.fromJson(item)).toList();
     } catch (e) {
       print('❌ Error cari sparepart: $e');
       return [];

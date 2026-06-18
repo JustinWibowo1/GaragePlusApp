@@ -143,14 +143,71 @@ class _AddCarScreenState extends State<AddCarScreen> {
                                   
                                   _buildSectionTitle('Data Pemilik', Icons.person_outline),
                                   const SizedBox(height: 16),
+
+                                  // ── Sapaan + Nama Pemilik ──
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Dropdown Sapaan
+                                        SizedBox(
+                                          width: 130,
+                                          child: DropdownButtonFormField<String>(
+                                            value: carViewModel.sapaan,
+                                            decoration: InputDecoration(
+                                              labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                                              prefixIcon: Icon(Icons.wc, color: Colors.grey.shade400),
+                                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF0F2042))),
+                                              filled: true,
+                                              fillColor: Colors.grey.shade50,
+                                            ),
+                                            items: CarViewModel.sapaanOpts
+                                                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                                .toList(),
+                                            onChanged: (val) {
+                                              if (val != null) carViewModel.setSapaan(val);
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        // Nama Pemilik
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller: carViewModel.ownerCtrl,
+                                            decoration: InputDecoration(
+                                              labelText: 'Nama Pemilik',
+                                              labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                                              prefixIcon: Icon(Icons.person, color: Colors.grey.shade400),
+                                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF0F2042))),
+                                              filled: true,
+                                              fillColor: Colors.grey.shade50,
+                                            ),
+                                            validator: (v) => (v == null || v.isEmpty) ? 'Wajib diisi' : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // ── Telepon + Kota ──
                                   Row(
                                     children: [
-                                      Expanded(child: _buildTextField(carViewModel.ownerCtrl, 'Nama Pemilik', Icons.person)),
-                                      const SizedBox(width: 16),
                                       Expanded(child: _buildTextField(carViewModel.teleponCtrl, 'Nomor Telepon / WA', Icons.phone, isNumber: true)),
+                                      const SizedBox(width: 16),
+                                      Expanded(child: _buildTextField(carViewModel.kotaCtrl, 'Kota', Icons.location_city)),
                                     ],
                                   ),
-                                  _buildTextField(carViewModel.alamatCtrl, 'Alamat Lengkap', Icons.home),
+
+                                  // ── Nama Perusahaan (opsional) ──
+                                  _buildOptionalTextField(carViewModel.perusahaanCtrl, 'Nama Perusahaan (opsional)', Icons.business),
+
+                                  // ── Alamat (opsional) ──
+                                  _buildOptionalTextField(carViewModel.alamatCtrl, 'Alamat Lengkap (opsional)', Icons.home),
 
                                   const SizedBox(height: 40),
                                   
@@ -168,6 +225,7 @@ class _AddCarScreenState extends State<AddCarScreen> {
                                       onPressed: () => _handleSave(carViewModel),
                                     ),
                                   ),
+
                                 ],
                               ),
                             ),
@@ -203,6 +261,28 @@ class _AddCarScreenState extends State<AddCarScreen> {
       ),
     );
   }
+
+  /// Field opsional — tidak ada validasi wajib diisi
+  Widget _buildOptionalTextField(TextEditingController controller, String label, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+          prefixIcon: Icon(icon, color: Colors.grey.shade400),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF0F2042))),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+        ),
+        // Tidak ada validator — field ini opsional
+      ),
+    );
+  }
+
 
   Widget _buildDropdown({
     required String label,

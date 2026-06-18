@@ -479,13 +479,81 @@ class _OwnerForm extends StatelessWidget {
     final vm = context.watch<CarViewModel>();
     return Column(
       children: [
+        // ── Sapaan + Nama Pemilik ──
+        Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Dropdown sapaan
+              SizedBox(
+                width: 110,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('SAPAAN',
+                        style: TextStyle(
+                          fontSize     : 10,
+                          fontWeight   : FontWeight.w700,
+                          color        : AppColors.textGrey,
+                          letterSpacing: 0.4,
+                        )),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      value: vm.sapaan,
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                          size: 18, color: AppColors.textGrey),
+                      style: const TextStyle(
+                        fontSize  : 14,
+                        fontWeight: FontWeight.w500,
+                        color     : AppColors.navy,
+                      ),
+                      decoration: const InputDecoration(
+                        isDense       : true,
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 11),
+                        filled      : true,
+                        fillColor   : Color(0xFFF8F9FC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide  : BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide  : BorderSide(color: AppColors.navy, width: 1.5),
+                        ),
+                      ),
+                      items: CarViewModel.sapaanOpts
+                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .toList(),
+                      onChanged: (v) { if (v != null) vm.setSapaan(v); },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Nama pemilik
+              Expanded(
+                child: _InputField(label: 'Nama Pemilik', ctrl: vm.ownerCtrl),
+              ),
+            ],
+          ),
+        ),
+
+        // ── Telepon + Kota ──
         _FieldRow(children: [
-          _InputField(label: 'Nama Pemilik', ctrl: vm.ownerCtrl),
-          _InputField(label: 'No. Telepon',  ctrl: vm.teleponCtrl,
+          _InputField(label: 'No. Telepon', ctrl: vm.teleponCtrl,
               keyboardType: TextInputType.phone),
+          _InputField(label: 'Kota', ctrl: vm.kotaCtrl),
         ]),
         const SizedBox(height: 20),
-        _InputField(label: 'Alamat Lengkap', ctrl: vm.alamatCtrl, maxLines: 2),
+
+        // ── Nama Perusahaan (opsional) ──
+        _InputField(label: 'Nama Perusahaan (opsional)', ctrl: vm.perusahaanCtrl),
+        const SizedBox(height: 20),
+
+        // ── Alamat (opsional) ──
+        _InputField(label: 'Alamat Lengkap (opsional)', ctrl: vm.alamatCtrl, maxLines: 2),
       ],
     );
   }
