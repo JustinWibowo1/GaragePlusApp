@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/order_kerja_models.dart';
+import '../../models/customer_models.dart';
 import '../../viewModel/order_kerja_viewmodel.dart';
 import '../../app_colors.dart';
 import '../../component_apps.dart';
@@ -27,31 +28,11 @@ class ThousandsSeparatorFormatter extends TextInputFormatter {
 }
 
 class OrderKerjaScreen extends StatefulWidget {
-  final String customerId; // nomor_rangka
-  final String nomorPolisi;
-  final String namaMobil;
-  final String nomorRangka;
-  final String mesinMobil;
-  final String transmisiMobil;
-  final String namaPemilik;
-  final String nomorTelepon;
-  final String alamat;
-  final String nomorMesin;
-  final int odometerTerakhir; // ← dari tabel customer
+  final Customer customer;
 
   const OrderKerjaScreen({
     Key? key,
-    required this.customerId,
-    required this.nomorPolisi,
-    required this.namaMobil,
-    required this.nomorRangka,
-    required this.mesinMobil,
-    required this.transmisiMobil,
-    required this.namaPemilik,
-    required this.nomorTelepon,
-    required this.alamat,
-    required this.nomorMesin,
-    this.odometerTerakhir = 0,
+    required this.customer,
   }) : super(key: key);
 
   @override
@@ -65,24 +46,25 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
 
   @override
   void initState() {
-    super.initState();
-    _orderKerjaViewModel.muatKerjaUntukMobil(
-      mesin: widget.mesinMobil,
-      transmisi: widget.transmisiMobil,
+    super.initState();    // Fetch data services based on machine/transmission type
+    _orderKerjaViewModel.fetchJasaByMobil(
+      mesin: widget.customer.tipeMesin,
+      transmisi: widget.customer.tipeTransmisi,
     );
     // Pre-fill kilometer dari odometer terakhir yang sudah tersimpan
-    if (widget.odometerTerakhir > 0) {
-      final formatted = widget.odometerTerakhir.toString().replaceAllMapped(
+    if (widget.customer.odometerTerakhir > 0) {
+      final formatted = widget.customer.odometerTerakhir.toString().replaceAllMapped(
             RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
             (m) => '${m[1]}.',
           );
       _kilometerController.text = formatted;
-      _orderKerjaViewModel.setKilometer(widget.odometerTerakhir);
+      _orderKerjaViewModel.setKilometer(widget.customer.odometerTerakhir);
     }
   }
 
   @override
   void dispose() {
+    _orderKerjaViewModel.dispose();
     _keluhanController.dispose();
     _kilometerController.dispose();
     super.dispose();
@@ -394,14 +376,14 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                                       CrossAxisAlignment.baseline,
                                   textBaseline: TextBaseline.alphabetic,
                                   children: [
-                                    Text(widget.namaMobil.toUpperCase(),
+                                    Text((widget.customer.tipeMobil.isNotEmpty ? widget.customer.tipeMobil : widget.customer.jenisMobil).toUpperCase(),
                                         style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 26,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 0.5)),
                                     Text(
-                                        '${widget.namaPemilik} (${widget.nomorTelepon})',
+                                        '${widget.customer.namaPemilik} (${widget.customer.noTelepon ?? '-'})',
                                         style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 16,
@@ -417,12 +399,12 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                                   textBaseline: TextBaseline.alphabetic,
                                   children: [
                                     Text(
-                                        '${widget.mesinMobil} • ${widget.transmisiMobil}',
+                                        '${widget.customer.tipeMesin} • ${widget.customer.tipeTransmisi}',
                                         style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 14,
                                             letterSpacing: 0.5)),
-                                    Text(widget.alamat,
+                                    Text(widget.customer.alamatLengkap,
                                         style: const TextStyle(
                                             color: Colors.white, fontSize: 14)),
                                   ],
@@ -437,11 +419,11 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 _buildInfoColumn(
-                                    'Nomor Polisi', widget.nomorPolisi),
+                                    'Nomor Polisi', widget.customer.nomorPolisi),
                                 _buildInfoColumn(
-                                    'Nomor Rangka', widget.nomorRangka),
+                                    'Nomor Rangka', widget.customer.nomorRangka),
                                 _buildInfoColumn(
-                                    'Nomor Mesin', widget.nomorMesin),
+                                    'Nomor Mesin', widget.customer.nomorMesin),
                                 _buildInfoColumn('ODOMETER', '- KM'),
                               ],
                             ),
@@ -472,7 +454,7 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                             Icon(Icons.edit_note,
                                 color: AppColors.navy, size: 24),
                             SizedBox(width: 8),
-                            Text('Catatan Keluhan Konsumen',
+                            Text('Catatan / Keluhan Konsumen',
                                 style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -643,10 +625,10 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(children: const [
-                              Icon(Icons.category,
-                                  color: AppColors.navy, size: 20),
+                              // Icon(Icons.category,
+                              //     color: AppColors.navy, size: 20),
                               SizedBox(width: 8),
-                              Text('Service Catalog',
+                              Text('Daftar Order Kerja',
                                   style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -878,7 +860,7 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                                           bool sukses =
                                               await _orderKerjaViewModel
                                                   .simpanOrderKerja(
-                                            customerId: widget.customerId,
+                                            customerId: widget.customer.nomorRangka,
                                             catatanKeluhan:
                                                 _keluhanController.text,
                                           );

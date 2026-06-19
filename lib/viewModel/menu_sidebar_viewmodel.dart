@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../ui/menu/home.dart';
 import '../ui/menu/add_car.dart';
 import '../ui/menu/service_screen.dart';
-import '../ui/menu/edit_car_screen.dart'; 
+import '../ui/menu/edit_car_screen.dart';
 
 class NavigationViewModel extends ChangeNotifier {
   int _selectedIndex = 0;
@@ -38,7 +38,7 @@ class NavigationViewModel extends ChangeNotifier {
         targetScreen = const ServicesScreen();
         break;
       case 3:
-        targetScreen = const EditCarScreen(); 
+        targetScreen = const EditCarScreen();
         break;
       default:
         targetScreen = const AdminDashboard();
@@ -49,7 +49,8 @@ class NavigationViewModel extends ChangeNotifier {
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation1, animation2) => targetScreen,
-        transitionDuration: Duration.zero, // Matikan animasi agar terasa seperti tab web
+        transitionDuration:
+            Duration.zero, // Matikan animasi agar terasa seperti tab web
         reverseTransitionDuration: Duration.zero,
       ),
     );

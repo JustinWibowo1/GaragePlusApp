@@ -172,6 +172,7 @@ class WorkOrderFiller {
 
   static void _setFieldValue(PdfField field, String value) {
     if (field is PdfTextBoxField) {
+      field.font = PdfStandardFont(PdfFontFamily.helvetica, 9);
       field.text = value;
     } else if (field is PdfComboBoxField) {
       try {

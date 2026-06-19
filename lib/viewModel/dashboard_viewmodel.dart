@@ -30,10 +30,8 @@ class DashboardViewModel extends ChangeNotifier {
 
     try {
       serviceLogistics = await _service.fetchServiceLogistics();
-      print('✅ Service Logistics: ${serviceLogistics.length} item');
     } catch (e) {
       errorMessage = 'Gagal memuat Service Logistics: $e';
-      print('❌ $errorMessage');
     }
 
     isLoading = false;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/customer_models.dart';
 import '../../viewModel/car_viewmodel.dart';
 import 'order_detail_screen.dart';
 import 'order_kerja_screen.dart';
@@ -26,12 +27,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
     });
   }
 
-    void _goBackToHome() {
+  void _goBackToHome() {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
       return;
     }
-
     Provider.of<NavigationViewModel>(context, listen: false).navigateTo(0, context);
   }
 
@@ -39,17 +39,16 @@ class _ServicesScreenState extends State<ServicesScreen> {
   Widget build(BuildContext context) {
     final viewModel = Provider.of<CarViewModel>(context);
     final query = _searchQuery.toLowerCase();
+
+    // ── Gunakan properti Customer yang strongly-typed ──────────
     final filteredCars = viewModel.cars.where((car) {
       return [
-        car['nomor_polisi'],
-        car['nama_pemilik'],
-        car['jenis_mobil'],
-        car['nomor_mesin'],
-        car['nomor_rangka'],
-      ].any((field) => (field ?? '')
-          .toString()
-          .toLowerCase()
-          .contains(query));
+        car.nomorPolisi,
+        car.namaPemilik,
+        car.jenisMobil,
+        car.nomorMesin,
+        car.nomorRangka,
+      ].any((field) => field.toLowerCase().contains(query));
     }).toList();
 
     return Scaffold(
@@ -60,8 +59,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 32, vertical: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
                   color: Colors.white,
                   child: Row(
                     children: [
@@ -138,12 +136,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
-  Widget _buildPremiumCarCard(
-      Map<String, dynamic> car, BuildContext context) {
-    final namaMobil  = car['tipe_mobil'] ?? car['jenis_mobil'] ?? 'Unknown Vehicle';
-    final nomorRangka = car['nomor_rangka'] ?? '-';
-    final nomorPolisi = car['nomor_polisi'] ?? '-';
-    final namaPemilik = car['nama_pemilik'] ?? '-';
+  /// Menerima Customer (strongly-typed) — bukan Map mentah
+  Widget _buildPremiumCarCard(Customer car, BuildContext context) {
+    final namaMobil   = car.tipeMobil.isNotEmpty ? car.tipeMobil : car.jenisMobil;
     final badgeColor  = Colors.blue.shade50;
     final textColor   = Colors.blue.shade900;
 
@@ -170,8 +165,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
               width: 120,
               height: 80,
               color: Colors.grey.shade200,
-              child: Icon(Icons.directions_car,
-                  size: 40, color: Colors.grey.shade400),
+              child: Icon(Icons.directions_car, size: 40, color: Colors.grey.shade400),
             ),
           ),
           const SizedBox(width: 24),
@@ -182,7 +176,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(namaMobil.toString().toUpperCase(),
+                Text(namaMobil.toUpperCase(),
                     style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -193,7 +187,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         fontSize: 10,
                         color: Colors.grey.shade500,
                         fontWeight: FontWeight.bold)),
-                Text(nomorRangka,
+                Text(car.nomorRangka,
                     style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade800,
@@ -214,7 +208,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         fontWeight: FontWeight.bold,
                         color: Colors.grey.shade500)),
                 const SizedBox(height: 4),
-                Text(nomorPolisi,
+                Text(car.nomorPolisi,
                     style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -236,12 +230,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         color: Colors.grey.shade500)),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                       color: badgeColor,
                       borderRadius: BorderRadius.circular(20)),
-                  child: Text(namaPemilik,
+                  child: Text(car.namaPemilik,
                       style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -265,17 +258,17 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => OrderKerjaScreen(
-                        customerId        : car['nomor_rangka'],
-                        namaPemilik       : car['nama_pemilik'],
-                        nomorTelepon      : car['no_telepon'],
-                        alamat            : car['alamat_pemilik'],
-                        nomorRangka       : car['nomor_rangka'],
-                        mesinMobil        : car['tipe_mesin'],
-                        transmisiMobil    : car['tipe_transmisi'],
-                        namaMobil         : namaMobil,
-                        nomorPolisi       : car['nomor_polisi'],
-                        nomorMesin        : car['nomor_mesin'],
-                        odometerTerakhir  : car['odometer_terakhir'] as int? ?? 0,
+                        customerId       : car.nomorRangka,
+                        namaPemilik      : car.namaPemilik,
+                        nomorTelepon     : car.noTelepon ?? '',
+                        alamat           : car.alamatLengkap,
+                        nomorRangka      : car.nomorRangka,
+                        mesinMobil       : car.tipeMesin,
+                        transmisiMobil   : car.tipeTransmisi,
+                        namaMobil        : namaMobil,
+                        nomorPolisi      : car.nomorPolisi,
+                        nomorMesin       : car.nomorMesin,
+                        odometerTerakhir : car.odometerTerakhir,
                       ),
                     ),
                   );
@@ -283,7 +276,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
               ),
               const SizedBox(width: 8),
 
-              // 📋 Detail Service — ✅ TANPA ChangeNotifierProvider
+              // 📋 Detail Service
               AppActionButton(
                 icon: Icons.receipt_long,
                 tooltip: 'Detail Service',
@@ -292,18 +285,18 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => OrderDetailScreen(
-                        customerId    : car['nomor_rangka'],
-                        nomorPolisi   : car['nomor_polisi'] ?? '',
-                        namaPemilik   : car['nama_pemilik'] ?? '',
-                        telepon       : car['no_telepon'] ?? '',
-                        alamat        : car['alamat_pemilik'] ?? '',
-                        merkMobil     : car['jenis_mobil'] ?? '',
-                        typeMobil     : car['tipe_mobil'] ?? '',
-                        tahun         : (car['tahun'] ?? '').toString(),
-                        noRangka      : car['nomor_rangka'] ?? '',
-                        noMesin       : car['nomor_mesin'] ?? '',
-                        tipeMesin     : car['tipe_mesin'] ?? '',
-                        tipeTransmisi : car['tipe_transmisi'] ?? '',
+                        customerId    : car.nomorRangka,
+                        nomorPolisi   : car.nomorPolisi,
+                        namaPemilik   : car.namaPemilik,
+                        telepon       : car.noTelepon ?? '',
+                        alamat        : car.alamatLengkap,
+                        merkMobil     : car.jenisMobil,
+                        typeMobil     : car.tipeMobil,
+                        tahun         : car.tahun.toString(),
+                        noRangka      : car.nomorRangka,
+                        noMesin       : car.nomorMesin,
+                        tipeMesin     : car.tipeMesin,
+                        tipeTransmisi : car.tipeTransmisi,
                       ),
                     ),
                   );
@@ -319,7 +312,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => EditCarScreen(carData: car),
+                      builder: (context) => EditCarScreen(carData: car.toJson()),
                     ),
                   );
                 },
@@ -331,4 +324,3 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 }
-

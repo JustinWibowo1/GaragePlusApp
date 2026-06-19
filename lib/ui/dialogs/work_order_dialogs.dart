@@ -1,0 +1,325 @@
+import 'package:flutter/material.dart';
+import '../../app_colors.dart';
+import '../../models/service_details_models.dart';
+import '../../viewModel/order_detail_viewmodel.dart';
+
+class WorkOrderDialogs {
+  // ── Dialog Ubah Status Pekerjaan ─────────────────────────────────────
+  static Future<void> showUbahStatusDialog(
+      BuildContext context, OrderDetailViewModel vm, OrderServiceDetail item) async {
+    final catatanController = TextEditingController(text: item.catatanTeknisi ?? '');
+    final statusBaru = item.status == StatusItem.menunggu
+        ? StatusItem.dikerjakan
+        : StatusItem.selesai;
+
+    final isSelesai = statusBaru == StatusItem.selesai;
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final catatanKosong = catatanController.text.trim().isEmpty;
+          final tombolDisabled = isSelesai && catatanKosong;
+
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            title: Text('${statusBaru.emoji} Tandai ${statusBaru.label}?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.namaPekerjaan ?? '',
+                    style: const TextStyle(
+                        color: Colors.grey, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 16),
+                if (isSelesai) ...[
+                  const Text(
+                    'Apa yang dikerjakan mekanik? *',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.navy,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: catatanController,
+                    maxLines: 3,
+                    onChanged: (v) => setS(() {}),
+                    decoration: InputDecoration(
+                      hintText: 'Misal: Baut oli aus, diakali dengan seal tape...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.primaryBlue),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isSelesai ? AppColors.green : AppColors.amber,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+                onPressed: tombolDisabled
+                    ? null
+                    : () {
+                        Navigator.pop(ctx, {
+                          'status': statusBaru,
+                          'catatan': catatanController.text,
+                        });
+                      },
+                child: Text(
+                  'Ya, ${statusBaru.label}',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result != null && context.mounted) {
+      await vm.ubahStatusItem(
+        detailId: item.id,
+        statusBaru: result['status'],
+        catatan: result['catatan'],
+      );
+    }
+  }
+
+  // ── Dialog input data pemeriksaan sebelum cetak WO ──────────────────
+  static Future<Map<String, String>?> showCetakWorkOrderDialog(BuildContext context) async {
+    final cBatteryAwal = TextEditingController();
+    final cBatteryStater = TextEditingController();
+    final cBatteryPengisian = TextEditingController();
+    final cTekananDepan = TextEditingController();
+    final cTekananBelakang = TextEditingController();
+    final cTekananCadangan = TextEditingController();
+    final cTorsiMur = TextEditingController();
+    final cServiceKm = TextEditingController();
+    final cServiceBulan = TextEditingController();
+    final cCatatan = TextEditingController();
+
+    String batteryStatus = 'Normal';
+    String oliMesin = 'cukup';
+    String oliMatik = 'X';
+    String coolant = 'cukup';
+    String oliRemKopling = 'cukup';
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.description_outlined, color: AppColors.greenDark),
+              SizedBox(width: 8),
+              Text('Data Pemeriksaan WO',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Battery ──────────────────────────────
+                  _dialogSection('🔋 Battery'),
+                  Row(
+                    children: [
+                      Expanded(child: _dialogTextField(cBatteryAwal, 'Awal (V)')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _dialogTextField(cBatteryStater, 'Stater (V)')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _dialogTextField(cBatteryPengisian, 'Pengisian (V)')),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _dialogDropdown(
+                    'Status Battery',
+                    batteryStatus,
+                    ['Normal', 'kurang baik', 'waktunya diganti'],
+                    (v) => setS(() => batteryStatus = v!),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ── Oli & Cairan ─────────────────────────
+                  _dialogSection('🛢️ Oli & Cairan'),
+                  _dialogDropdown('Oli Mesin', oliMesin, ['cukup', 'kurang', 'minimal', 'X'],
+                      (v) => setS(() => oliMesin = v!)),
+                  const SizedBox(height: 6),
+                  _dialogDropdown('Oli Matik', oliMatik, ['cukup', 'kurang', 'minimal', 'X'],
+                      (v) => setS(() => oliMatik = v!)),
+                  const SizedBox(height: 6),
+                  _dialogDropdown('Coolant', coolant, ['cukup', 'kurang', 'minimal'],
+                      (v) => setS(() => coolant = v!)),
+                  const SizedBox(height: 6),
+                  _dialogDropdown('Oli Rem & Kopling', oliRemKopling, ['cukup', 'kurang', 'minimal'],
+                      (v) => setS(() => oliRemKopling = v!)),
+                  const SizedBox(height: 12),
+
+                  // ── Tekanan Ban ──────────────────────────
+                  _dialogSection('🚗 Tekanan Ban (psi)'),
+                  Row(
+                    children: [
+                      Expanded(child: _dialogTextField(cTekananDepan, 'Depan')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _dialogTextField(cTekananBelakang, 'Belakang')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _dialogTextField(cTekananCadangan, 'Cadangan')),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ── Torsi & Service Berikut ──────────────
+                  _dialogSection('🔧 Lain-lain'),
+                  _dialogTextField(cTorsiMur, 'Torsi Mur (kg-m)'),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(child: _dialogTextField(cServiceKm, 'Service berikut KM')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _dialogTextField(cServiceBulan, 'Bulan')),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  _dialogTextField(cCatatan, 'Catatan / Saran Tambahan', maxLines: 3),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.print, size: 16),
+              label: const Text('Cetak WO'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.greenDark,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                Navigator.pop(ctx, {
+                  'batteryAwal': cBatteryAwal.text,
+                  'batteryStater': cBatteryStater.text,
+                  'batteryPengisian': cBatteryPengisian.text,
+                  'batteryStatus': batteryStatus,
+                  'oliMesin': oliMesin,
+                  'oliMatik': oliMatik,
+                  'coolant': coolant,
+                  'oliRemKopling': oliRemKopling,
+                  'tekananDepan': cTekananDepan.text,
+                  'tekananBelakang': cTekananBelakang.text,
+                  'tekananCadangan': cTekananCadangan.text,
+                  'torsiMur': cTorsiMur.text,
+                  'serviceKm': cServiceKm.text,
+                  'serviceBulan': cServiceBulan.text,
+                  'catatanTambahan': cCatatan.text,
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return result;
+  }
+
+  static Widget _dialogSection(String title) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: AppColors.greenDark,
+            )),
+      );
+
+  static Widget _dialogTextField(
+    TextEditingController ctrl,
+    String hint, {
+    int maxLines = 1,
+  }) =>
+      TextField(
+        controller: ctrl,
+        maxLines: maxLines,
+        keyboardType: maxLines == 1 ? TextInputType.text : TextInputType.multiline,
+        decoration: InputDecoration(
+          hintText: hint,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          filled: true,
+          fillColor: Colors.grey[50],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+        ),
+      );
+
+  static Widget _dialogDropdown(
+    String label,
+    String value,
+    List<String> options,
+    void Function(String?) onChanged,
+  ) =>
+      Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          ),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: value,
+              isDense: true,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                filled: true,
+                fillColor: Colors.grey[50],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
+              items: options.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      );
+}

@@ -87,9 +87,7 @@ class OrderKerjaViewModel extends ChangeNotifier {
 
       daftarSparepart =
           await _sparepartServices.fetchByKategoriList(kategoriIds);
-      print('✅ Sparepart dimuat: ${daftarSparepart.length} item');
     } catch (e) {
-      print('❌ Gagal muat sparepart: $e');
       daftarSparepart = [];
     }
 
@@ -131,7 +129,6 @@ class OrderKerjaViewModel extends ChangeNotifier {
 
     if (!keranjangJasa.contains(jasa)) {
       keranjangJasa.add(jasa);
-      print('✅ ${jasa.nama} masuk keranjang dengan ${items.length} sparepart');
     }
     notifyListeners();
   }
@@ -139,7 +136,6 @@ class OrderKerjaViewModel extends ChangeNotifier {
   void hapusDariKeranjang(OrderKerja jasa) {
     keranjangJasa.remove(jasa);
     sparepartPerPekerjaan.remove(jasa.id);
-    print('🗑 ${jasa.nama} dihapus dari keranjang');
     notifyListeners();
   }
 
@@ -163,14 +159,11 @@ class OrderKerjaViewModel extends ChangeNotifier {
   }) async {
     if (keranjangJasa.isEmpty) return false;
     if (_kilometer <= 0) {
-      print('⚠️ Kilometer belum diisi');
       return false;
     }
 
     try {
       final supabase = Supabase.instance.client;
-
-      // 1. Insert header order_service
       final header = await supabase
           .from('order_service')
           .insert({
@@ -220,16 +213,13 @@ class OrderKerjaViewModel extends ChangeNotifier {
         'odometer_terakhir': _kilometer,
         'tgl_service_terakhir': DateTime.now().toIso8601String(),
       }).eq('nomor_rangka', customerId);
-      print('✅ Odometer customer diperbarui: $_kilometer km');
 
-      // 5. Reset state
       keranjangJasa.clear();
       sparepartPerPekerjaan.clear();
       _kilometer = 0;
       notifyListeners();
       return true;
     } catch (e) {
-      print('❌ Gagal simpan: $e');
       return false;
     }
   }

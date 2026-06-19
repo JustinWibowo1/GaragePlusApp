@@ -15,31 +15,105 @@ class EditCarScreen extends StatefulWidget {
 }
 
 class _EditCarScreenState extends State<EditCarScreen> {
+  // ── Controllers dipindahkan ke View (State) ────────────────
+  final _rangkaCtrl     = TextEditingController();
+  final _mesinCtrl      = TextEditingController();
+  final _polisiCtrl     = TextEditingController();
+  final _jenisCtrl      = TextEditingController();
+  final _typeCtrl       = TextEditingController();
+  final _tahunCtrl      = TextEditingController();
+  final _ownerCtrl      = TextEditingController();
+  final _alamatCtrl     = TextEditingController();
+  final _teleponCtrl    = TextEditingController();
+  final _perusahaanCtrl = TextEditingController();
+  final _kotaCtrl       = TextEditingController();
+
+  // ── State lokal untuk dropdown ─────────────────────────────
+  String? _tipeMesin;
+  String? _tipeTransmisi;
+  String  _sapaan = 'Bapak';
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<CarViewModel>(context, listen: false)
-          .initForm(data: widget.carData);
-    });
+    _initForm(widget.carData);
+  }
+
+  /// Mengisi controller dari data yang ada (inisialisasi form edit)
+  void _initForm(Map<String, dynamic>? data) {
+    final d = data ?? {};
+    _rangkaCtrl.text     = d['nomor_rangka']   ?? '';
+    _mesinCtrl.text      = d['nomor_mesin']    ?? '';
+    _polisiCtrl.text     = d['nomor_polisi']   ?? '';
+    _jenisCtrl.text      = d['jenis_mobil']    ?? '';
+    _typeCtrl.text       = d['tipe_mobil']     ?? '';
+    _tahunCtrl.text      = d['tahun']?.toString() ?? '';
+    _alamatCtrl.text     = d['alamat_pemilik'] ?? '';
+    _teleponCtrl.text    = d['no_telepon']     ?? '';
+    _perusahaanCtrl.text = d['nama_perusahaan'] ?? '';
+    _kotaCtrl.text       = d['kota_pemilik']   ?? '';
+
+    // Parse sapaan & nama dari nama_pemilik tersimpan
+    final fullName = d['nama_pemilik'] as String? ?? '';
+    final knownSapaan = CarViewModel.sapaanOpts.firstWhere(
+      (s) => fullName.startsWith('$s '),
+      orElse: () => 'Bapak',
+    );
+    _sapaan = knownSapaan;
+    _ownerCtrl.text = fullName.startsWith('$knownSapaan ')
+        ? fullName.substring(knownSapaan.length + 1)
+        : fullName;
+
+    final rawM = d['tipe_mesin']     as String? ?? '';
+    final rawT = d['tipe_transmisi'] as String? ?? '';
+    _tipeMesin     = CarViewModel.mesinOpts.contains(rawM)     ? rawM : null;
+    _tipeTransmisi = CarViewModel.transmisiOpts.contains(rawT) ? rawT : null;
   }
 
   @override
   void dispose() {
+    _rangkaCtrl.dispose();
+    _mesinCtrl.dispose();
+    _polisiCtrl.dispose();
+    _jenisCtrl.dispose();
+    _typeCtrl.dispose();
+    _tahunCtrl.dispose();
+    _ownerCtrl.dispose();
+    _alamatCtrl.dispose();
+    _teleponCtrl.dispose();
+    _perusahaanCtrl.dispose();
+    _kotaCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _onSave() async {
     final vm          = Provider.of<CarViewModel>(context, listen: false);
     final nomorRangka = widget.carData?['nomor_rangka']?.toString() ?? '';
+    final namaPemilikFull = '$_sapaan ${_ownerCtrl.text.trim()}';
 
-    final success = await vm.submitEditCar(nomorRangka);
+    // ── Kumpulkan data di View lalu kirim ke ViewModel ────────
+    final data = <String, dynamic>{
+      'nomor_rangka'   : _rangkaCtrl.text.trim(),
+      'nomor_mesin'    : _mesinCtrl.text.trim(),
+      'nomor_polisi'   : _polisiCtrl.text.trim(),
+      'jenis_mobil'    : _jenisCtrl.text.trim(),
+      'tipe_mobil'     : _typeCtrl.text.trim(),
+      'tahun'          : int.tryParse(_tahunCtrl.text.trim()) ?? 0,
+      'tipe_mesin'     : _tipeMesin,
+      'tipe_transmisi' : _tipeTransmisi,
+      'nama_pemilik'   : namaPemilikFull,
+      'alamat_pemilik' : _alamatCtrl.text.trim().isEmpty ? null : _alamatCtrl.text.trim(),
+      'no_telepon'     : _teleponCtrl.text.trim(),
+      'nama_perusahaan': _perusahaanCtrl.text.trim().isEmpty ? null : _perusahaanCtrl.text.trim(),
+      'kota_pemilik'   : _kotaCtrl.text.trim().isEmpty ? null : _kotaCtrl.text.trim(),
+    };
+
+    final success = await vm.submitEditCar(nomorRangka, data);
 
     if (!mounted) return;
     if (success) {
       _snack('Data mobil berhasil diperbarui');
-      Provider.of<NavigationViewModel>(context, listen: false)
-          .goToGarageList();
+      Provider.of<NavigationViewModel>(context, listen: false).goToGarageList();
       Navigator.pop(context);
     } else {
       _snack(vm.errorMessage ?? 'Gagal memperbarui data mobil');
@@ -68,25 +142,49 @@ class _EditCarScreenState extends State<EditCarScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _HeroSection(carData: widget.carData),
+                        _HeroSection(
+                          carData    : widget.carData,
+                          polisiCtrl : _polisiCtrl,
+                          rangkaCtrl : _rangkaCtrl,
+                        ),
                         const SizedBox(height: 28),
                         _TwoColumnLayout(
                           left: Column(
                             children: [
-                              const _FormCard(
+                              _FormCard(
                                 icon : Icons.settings_outlined,
                                 title: 'Spesifikasi Teknis',
-                                child: _TechnicalSpecsForm(),
+                                child: _TechnicalSpecsForm(
+                                  jenisCtrl     : _jenisCtrl,
+                                  typeCtrl      : _typeCtrl,
+                                  tahunCtrl     : _tahunCtrl,
+                                  rangkaCtrl    : _rangkaCtrl,
+                                  mesinCtrl     : _mesinCtrl,
+                                  tipeMesin     : _tipeMesin,
+                                  tipeTransmisi : _tipeTransmisi,
+                                  onMesinChanged: (v) => setState(() => _tipeMesin = v),
+                                  onTransmisiChanged: (v) => setState(() => _tipeTransmisi = v),
+                                ),
                               ),
                               const SizedBox(height: 20),
-                              const _FormCard(
+                              _FormCard(
                                 icon : Icons.person_outline,
                                 title: 'Identitas Pemilik',
-                                child: _OwnerForm(),
+                                child: _OwnerForm(
+                                  sapaan       : _sapaan,
+                                  ownerCtrl    : _ownerCtrl,
+                                  teleponCtrl  : _teleponCtrl,
+                                  kotaCtrl     : _kotaCtrl,
+                                  perusahaanCtrl: _perusahaanCtrl,
+                                  alamatCtrl   : _alamatCtrl,
+                                  onSapaanChanged: (v) {
+                                    if (v != null) setState(() => _sapaan = v);
+                                  },
+                                ),
                               ),
                             ],
                           ),
-                          right: _ActionPanel(onSave: _onSave),
+                          right: _ActionPanel(onSave: _onSave, isLoading: vm.isLoading),
                         ),
                       ],
                     ),
@@ -178,23 +276,23 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-
-
-
 // ─────────────────────────────────────────────────────────────
 //  Hero section
 // ─────────────────────────────────────────────────────────────
 
 class _HeroSection extends StatelessWidget {
   final Map<String, dynamic>? carData;
+  final TextEditingController polisiCtrl;
+  final TextEditingController rangkaCtrl;
 
   const _HeroSection({
     required this.carData,
+    required this.polisiCtrl,
+    required this.rangkaCtrl,
   });
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.read<CarViewModel>();
     final carName =
         (carData?['tipe_mobil'] ?? carData?['jenis_mobil'] ?? 'Unknown Vehicle')
             .toString()
@@ -249,13 +347,11 @@ class _HeroSection extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
                         color       : const Color(0xFFEBF5FF),
                         borderRadius: BorderRadius.circular(10),
-                        border      : Border.all(
-                            color: const Color(0xFFB3D4F5), width: 0.5),
+                        border      : Border.all(color: const Color(0xFFB3D4F5), width: 0.5),
                       ),
                       child: const Column(
                         children: [
@@ -282,17 +378,11 @@ class _HeroSection extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: _InlineField(
-                        label     : 'LICENSE PLATE',
-                        controller: vm.polisiCtrl,
-                      ),
+                      child: _InlineField(label: 'LICENSE PLATE',       controller: polisiCtrl),
                     ),
                     const SizedBox(width: 24),
                     Expanded(
-                      child: _InlineField(
-                        label     : 'VIN IDENTIFICATION',
-                        controller: vm.rangkaCtrl,
-                      ),
+                      child: _InlineField(label: 'VIN IDENTIFICATION',  controller: rangkaCtrl),
                     ),
                   ],
                 ),
@@ -335,8 +425,7 @@ class _InlineField extends StatelessWidget {
             isDense       : true,
             contentPadding: const EdgeInsets.symmetric(vertical: 6),
             enabledBorder : UnderlineInputBorder(
-                borderSide:
-                    BorderSide(color: Colors.blue.shade100, width: 1.5)),
+                borderSide: BorderSide(color: Colors.blue.shade100, width: 1.5)),
             focusedBorder : const UnderlineInputBorder(
                 borderSide: BorderSide(color: AppColors.navy, width: 2)),
           ),
@@ -432,51 +521,89 @@ class _FormCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 
 class _TechnicalSpecsForm extends StatelessWidget {
-  const _TechnicalSpecsForm();
+  final TextEditingController jenisCtrl;
+  final TextEditingController typeCtrl;
+  final TextEditingController tahunCtrl;
+  final TextEditingController rangkaCtrl;
+  final TextEditingController mesinCtrl;
+  final String? tipeMesin;
+  final String? tipeTransmisi;
+  final ValueChanged<String?> onMesinChanged;
+  final ValueChanged<String?> onTransmisiChanged;
+
+  const _TechnicalSpecsForm({
+    required this.jenisCtrl,
+    required this.typeCtrl,
+    required this.tahunCtrl,
+    required this.rangkaCtrl,
+    required this.mesinCtrl,
+    required this.tipeMesin,
+    required this.tipeTransmisi,
+    required this.onMesinChanged,
+    required this.onTransmisiChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<CarViewModel>();
     return Column(
       children: [
         _FieldRow(children: [
-          _InputField(label: 'Merek / Jenis', ctrl: vm.jenisCtrl),
-          _InputField(label: 'Model / Tipe',  ctrl: vm.typeCtrl),
+          _InputField(label: 'Merek / Jenis', ctrl: jenisCtrl),
+          _InputField(label: 'Model / Tipe',  ctrl: typeCtrl),
         ]),
         const SizedBox(height: 20),
         _FieldRow(children: [
-          _InputField(label: 'Tahun Produksi', ctrl: vm.tahunCtrl,
+          _InputField(label: 'Tahun Produksi', ctrl: tahunCtrl,
               keyboardType: TextInputType.number),
-          _InputField(label: 'No. Rangka', ctrl: vm.rangkaCtrl),
+          _InputField(label: 'No. Rangka', ctrl: rangkaCtrl),
         ]),
         const SizedBox(height: 20),
         _FieldRow(children: [
           _DropdownField(
             label    : 'Tipe Mesin',
-            value    : vm.tipeMesin,
+            value    : tipeMesin,
             items    : CarViewModel.mesinOpts,
-            onChanged: (v) => vm.setTipeMesin(v),
+            onChanged: onMesinChanged,
           ),
           _DropdownField(
             label    : 'Tipe Transmisi',
-            value    : vm.tipeTransmisi,
+            value    : tipeTransmisi,
             items    : CarViewModel.transmisiOpts,
-            onChanged: (v) => vm.setTipeTransmisi(v),
+            onChanged: onTransmisiChanged,
           ),
         ]),
         const SizedBox(height: 20),
-        _InputField(label: 'No. Mesin', ctrl: vm.mesinCtrl),
+        _InputField(label: 'No. Mesin', ctrl: mesinCtrl),
       ],
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+//  Owner form
+// ─────────────────────────────────────────────────────────────
+
 class _OwnerForm extends StatelessWidget {
-  const _OwnerForm();
+  final String sapaan;
+  final TextEditingController ownerCtrl;
+  final TextEditingController teleponCtrl;
+  final TextEditingController kotaCtrl;
+  final TextEditingController perusahaanCtrl;
+  final TextEditingController alamatCtrl;
+  final ValueChanged<String?> onSapaanChanged;
+
+  const _OwnerForm({
+    required this.sapaan,
+    required this.ownerCtrl,
+    required this.teleponCtrl,
+    required this.kotaCtrl,
+    required this.perusahaanCtrl,
+    required this.alamatCtrl,
+    required this.onSapaanChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<CarViewModel>();
     return Column(
       children: [
         // ── Sapaan + Nama Pemilik ──
@@ -485,7 +612,6 @@ class _OwnerForm extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Dropdown sapaan
               SizedBox(
                 width: 110,
                 child: Column(
@@ -500,7 +626,7 @@ class _OwnerForm extends StatelessWidget {
                         )),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
-                      value: vm.sapaan,
+                      value: sapaan,
                       icon: const Icon(Icons.keyboard_arrow_down_rounded,
                           size: 18, color: AppColors.textGrey),
                       style: const TextStyle(
@@ -510,8 +636,7 @@ class _OwnerForm extends StatelessWidget {
                       ),
                       decoration: const InputDecoration(
                         isDense       : true,
-                        contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 11),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                         filled      : true,
                         fillColor   : Color(0xFFF8F9FC),
                         enabledBorder: OutlineInputBorder(
@@ -526,34 +651,28 @@ class _OwnerForm extends StatelessWidget {
                       items: CarViewModel.sapaanOpts
                           .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                           .toList(),
-                      onChanged: (v) { if (v != null) vm.setSapaan(v); },
+                      onChanged: onSapaanChanged,
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
-              // Nama pemilik
               Expanded(
-                child: _InputField(label: 'Nama Pemilik', ctrl: vm.ownerCtrl),
+                child: _InputField(label: 'Nama Pemilik', ctrl: ownerCtrl),
               ),
             ],
           ),
         ),
 
-        // ── Telepon + Kota ──
         _FieldRow(children: [
-          _InputField(label: 'No. Telepon', ctrl: vm.teleponCtrl,
+          _InputField(label: 'No. Telepon', ctrl: teleponCtrl,
               keyboardType: TextInputType.phone),
-          _InputField(label: 'Kota', ctrl: vm.kotaCtrl),
+          _InputField(label: 'Kota', ctrl: kotaCtrl),
         ]),
         const SizedBox(height: 20),
-
-        // ── Nama Perusahaan (opsional) ──
-        _InputField(label: 'Nama Perusahaan (opsional)', ctrl: vm.perusahaanCtrl),
+        _InputField(label: 'Nama Perusahaan (opsional)', ctrl: perusahaanCtrl),
         const SizedBox(height: 20),
-
-        // ── Alamat (opsional) ──
-        _InputField(label: 'Alamat Lengkap (opsional)', ctrl: vm.alamatCtrl, maxLines: 2),
+        _InputField(label: 'Alamat Lengkap (opsional)', ctrl: alamatCtrl, maxLines: 2),
       ],
     );
   }
@@ -565,141 +684,117 @@ class _OwnerForm extends StatelessWidget {
 
 class _ActionPanel extends StatelessWidget {
   final VoidCallback onSave;
-  const _ActionPanel({required this.onSave});
+  final bool isLoading;
+  const _ActionPanel({required this.onSave, required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CarViewModel>(
-      builder: (context, vm, _) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color       : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border      : Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 34, height: 34,
-                  decoration: BoxDecoration(
-                    color       : const Color(0xFFF0F2F8),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.bolt_outlined,
-                      size: 18, color: AppColors.navy),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color       : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border      : Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color       : const Color(0xFFF0F2F8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 12),
-                const Text('Tindakan',
-                    style: TextStyle(
-                      fontSize  : 15,
-                      fontWeight: FontWeight.w700,
-                      color     : AppColors.navy,
-                    )),
+                child: const Icon(Icons.bolt_outlined, size: 18, color: AppColors.navy),
+              ),
+              const SizedBox(width: 12),
+              const Text('Tindakan',
+                  style: TextStyle(
+                    fontSize  : 15,
+                    fontWeight: FontWeight.w700,
+                    color     : AppColors.navy,
+                  )),
+            ],
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 16),
+            height: 0.5,
+            color : AppColors.border,
+          ),
+
+          _SummaryChip(icon: Icons.directions_car_outlined, label: 'Mode',      value: 'Edit Aktif'),
+          const SizedBox(height: 8),
+          _SummaryChip(icon: Icons.verified_user_outlined,  label: 'Audit Log', value: 'Aktif', valueColor: AppColors.greenAccent),
+          const SizedBox(height: 20),
+
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: isLoading ? null : onSave,
+              style: ElevatedButton.styleFrom(
+                backgroundColor        : AppColors.navy,
+                foregroundColor        : Colors.white,
+                disabledBackgroundColor: const Color(0xFFB0BAC9),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.save_outlined, size: 18),
+                        SizedBox(width: 8),
+                        Text('Simpan Perubahan',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                      ],
+                    ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textGrey,
+                side : const BorderSide(color: AppColors.border),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Batalkan',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color       : const Color(0xFFFAFBFC),
+              borderRadius: BorderRadius.circular(10),
+              border      : Border.all(color: AppColors.border),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, size: 14, color: AppColors.textGrey),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Semua perubahan tercatat dalam audit log sistem.',
+                    style: TextStyle(fontSize: 11, color: AppColors.textGrey, height: 1.4),
+                  ),
+                ),
               ],
             ),
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 16),
-              height: 0.5,
-              color : AppColors.border,
-            ),
-
-            _SummaryChip(
-              icon : Icons.directions_car_outlined,
-              label: 'Mode',
-              value: 'Edit Aktif',
-            ),
-            const SizedBox(height: 8),
-            _SummaryChip(
-              icon      : Icons.verified_user_outlined,
-              label     : 'Audit Log',
-              value     : 'Aktif',
-              valueColor: AppColors.greenAccent,
-            ),
-            const SizedBox(height: 20),
-
-            // Save button
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: vm.isLoading ? null : onSave,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor        : AppColors.navy,
-                  foregroundColor        : Colors.white,
-                  disabledBackgroundColor: const Color(0xFFB0BAC9),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: vm.isLoading
-                    ? const SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
-                    : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.save_outlined, size: 18),
-                          SizedBox(width: 8),
-                          Text('Simpan Perubahan',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize  : 14,
-                              )),
-                        ],
-                      ),
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Discard button
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textGrey,
-                  side : const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Batalkan',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color       : const Color(0xFFFAFBFC),
-                borderRadius: BorderRadius.circular(10),
-                border      : Border.all(color: AppColors.border),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, size: 14, color: AppColors.textGrey),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Semua perubahan tercatat dalam audit log sistem.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color   : AppColors.textGrey,
-                        height  : 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -731,15 +826,10 @@ class _SummaryChip extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: AppColors.textGrey),
           const SizedBox(width: 8),
-          Text(label,
-              style: const TextStyle(fontSize: 12, color: AppColors.textGrey)),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textGrey)),
           const Spacer(),
           Text(value,
-              style: TextStyle(
-                fontSize  : 12,
-                fontWeight: FontWeight.w600,
-                color     : valueColor,
-              )),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: valueColor)),
         ],
       ),
     );
@@ -798,8 +888,7 @@ class _InputField extends StatelessWidget {
           ),
           decoration: InputDecoration(
             isDense       : true,
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 11),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             filled      : true,
             fillColor   : const Color(0xFFF8F9FC),
             enabledBorder: OutlineInputBorder(
@@ -854,8 +943,7 @@ class _DropdownField extends StatelessWidget {
           ),
           decoration: InputDecoration(
             isDense       : true,
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 11),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             filled      : true,
             fillColor   : const Color(0xFFF8F9FC),
             enabledBorder: OutlineInputBorder(

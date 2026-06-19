@@ -31,8 +31,6 @@ class DashboardService {
           .order('created_at', ascending: false)
           .limit(8);
 
-      print('📦 Response dashboard: $response');
-
       return response.map((order) {
         final customer = order['customer'] as Map<String, dynamic>?;
         final details = order['order_service_detail'] as List<dynamic>? ?? [];
@@ -62,7 +60,6 @@ class DashboardService {
         );
       }).toList();
     } catch (e) {
-      print('❌ Error fetchServiceLogistics: $e');
       rethrow;
     }
   }

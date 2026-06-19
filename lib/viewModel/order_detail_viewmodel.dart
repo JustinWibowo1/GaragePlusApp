@@ -8,21 +8,19 @@ import '../models/order_kerja_models.dart';
 class OrderDetailViewModel extends ChangeNotifier {
   final _supabase = Supabase.instance.client;
 
-  List<OrderServiceSummary> daftarOrder    = [];
-  List<OrderServiceDetail>  daftarDetail   = [];
-  List<OrderKerja>          _serviceRules  = [];
-  Map<String, int>          _lastServiceOdometer = {};
-  bool    isLoading    = false;
+  List<OrderServiceSummary> daftarOrder = [];
+  List<OrderServiceDetail> daftarDetail = [];
+  List<OrderKerja> _serviceRules = [];
+  final Map<String, int> _lastServiceOdometer = {};
+  bool isLoading = false;
   String? errorMessage;
-
-  // ── Metadata kendaraan (untuk filter kompatibilitas reminder) ──
-  String _tipeMesin     = '';
+  String _tipeMesin = '';
   String _tipeTransmisi = '';
 
-  // ── Getters progress ──────────────────────────────────────
-  int    get totalItem   => daftarDetail.length;
-  int    get itemSelesai => daftarDetail.where((d) => d.status == StatusItem.selesai).length;
-  double get progress    => totalItem == 0 ? 0 : itemSelesai / totalItem;
+  int get totalItem => daftarDetail.length;
+  int get itemSelesai =>
+      daftarDetail.where((d) => d.status == StatusItem.selesai).length;
+  double get progress => totalItem == 0 ? 0 : itemSelesai / totalItem;
   int _kmTerakhir = 0;
   int get kmTerakhir => _kmTerakhir;
 
@@ -41,7 +39,8 @@ class OrderDetailViewModel extends ChangeNotifier {
       if (_tipeMesin.isNotEmpty && rule.kompatibilitasMesin.isNotEmpty) {
         if (!rule.kompatibilitasMesin.contains(_tipeMesin)) continue;
       }
-      if (_tipeTransmisi.isNotEmpty && rule.kompatibilitasTransmisi.isNotEmpty) {
+      if (_tipeTransmisi.isNotEmpty &&
+          rule.kompatibilitasTransmisi.isNotEmpty) {
         if (!rule.kompatibilitasTransmisi.contains(_tipeTransmisi)) continue;
       }
 
@@ -61,10 +60,10 @@ class OrderDetailViewModel extends ChangeNotifier {
       }
 
       result.add(ServiceReminderItem(
-        nama         : rule.nama,
-        intervalKm   : interval,
-        kmTerakhir   : kmTerakhir,
-        kmBerikutnya : kmBerikutnya,
+        nama: rule.nama,
+        intervalKm: interval,
+        kmTerakhir: kmTerakhir,
+        kmBerikutnya: kmBerikutnya,
       ));
     }
 
@@ -79,7 +78,8 @@ class OrderDetailViewModel extends ChangeNotifier {
     try {
       final response = await _supabase
           .from('order_kerja')
-          .select('id, nama, kode, interval_km, kompatibilitas_mesin, kompatibilitas_transmisi, is_active')
+          .select(
+              'id, nama, kode, interval_km, kompatibilitas_mesin, kompatibilitas_transmisi, is_active')
           .not('interval_km', 'is', null)
           .eq('is_active', true)
           .order('interval_km', ascending: true);
@@ -87,10 +87,7 @@ class OrderDetailViewModel extends ChangeNotifier {
       _serviceRules = (response as List)
           .map((e) => OrderKerja.fromJson(e as Map<String, dynamic>))
           .toList();
-
-      print('✅ serviceRules: ${_serviceRules.length} item');
     } catch (e) {
-      print('❌ Gagal muat service rules: $e');
       _serviceRules = [];
     }
   }
@@ -99,17 +96,15 @@ class OrderDetailViewModel extends ChangeNotifier {
 
   Future<void> muatOrderByCustomer(
     String customerId, {
-    String tipeMesin     = '',
+    String tipeMesin = '',
     String tipeTransmisi = '',
   }) async {
     // Simpan metadata kendaraan untuk filter kompatibilitas
-    _tipeMesin     = tipeMesin;
+    _tipeMesin = tipeMesin;
     _tipeTransmisi = tipeTransmisi;
-    isLoading    = true;
+    isLoading = true;
     errorMessage = null;
     notifyListeners();
-
-    print('🔍 customerId yang dikirim: $customerId');
 
     try {
       // Jalankan paralel: orders + service rules + odometer customer + riwayat item selesai
@@ -142,7 +137,8 @@ class OrderDetailViewModel extends ChangeNotifier {
       final response = results[0] as List<dynamic>;
 
       daftarOrder = response
-          .map((item) => OrderServiceSummary.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              OrderServiceSummary.fromJson(item as Map<String, dynamic>))
           .toList();
 
       final kmDariOrder = daftarOrder.isEmpty
@@ -152,10 +148,6 @@ class OrderDetailViewModel extends ChangeNotifier {
       // Ambil nilai terbesar agar km tidak mundur
       _kmTerakhir = max(kmDariCustomer, kmDariOrder);
 
-      print('📦 Response mentah: $response');
-      print('📊 Jumlah data: ${response.length}');
-
-
       // 4. Proses riwayat item selesai untuk reset warning
       final completedItems = results[3] as List<dynamic>;
       _lastServiceOdometer.clear();
@@ -164,20 +156,15 @@ class OrderDetailViewModel extends ChangeNotifier {
         final os = row['order_service'] as Map<String, dynamic>?;
         if (os != null) {
           final odometer = os['kilometer'] as int? ?? 0;
-          if (!_lastServiceOdometer.containsKey(orderKerjaId) || 
+          if (!_lastServiceOdometer.containsKey(orderKerjaId) ||
               _lastServiceOdometer[orderKerjaId]! < odometer) {
             _lastServiceOdometer[orderKerjaId] = odometer;
           }
         }
       }
 
-      print('✅ daftarOrder: ${daftarOrder.length} item');
-      print('✅ kmTerakhir: $_kmTerakhir km');
-      print('✅ serviceReminders: ${serviceReminders.length} item');
-      print('✅ lastServiceOdometer tracker: ${_lastServiceOdometer.length} pekerjaan pernah diselesaikan');
     } catch (e) {
       errorMessage = 'Gagal memuat data: $e';
-      print('❌ Error: $e');
     }
 
     isLoading = false;
@@ -188,17 +175,13 @@ class OrderDetailViewModel extends ChangeNotifier {
 
   Future<void> _cekDanUpdateStatusOrder() async {
     if (daftarDetail.isEmpty) {
-      print('⚠️ daftarDetail kosong, skip cek');
       return;
     }
 
-    print('🔍 Cek status semua item:');
-    for (var d in daftarDetail) {
-      print('   ${d.namaPekerjaan} → ${d.status.label}');
-    }
-
-    final semuaSelesai  = daftarDetail.every((d) => d.status == StatusItem.selesai);
-    final semuaMenunggu = daftarDetail.every((d) => d.status == StatusItem.menunggu);
+    final semuaSelesai =
+        daftarDetail.every((d) => d.status == StatusItem.selesai);
+    final semuaMenunggu =
+        daftarDetail.every((d) => d.status == StatusItem.menunggu);
 
     final String statusBaruOrder;
     if (semuaSelesai) {
@@ -209,36 +192,23 @@ class OrderDetailViewModel extends ChangeNotifier {
       statusBaruOrder = 'Dikerjakan';
     }
 
-    print('📊 Status baru order: $statusBaruOrder');
-
-    final nomorWo       = daftarDetail.first.nomorWo;
-    final orderIndex    = daftarOrder.indexWhere((o) => o.nomorWo == nomorWo);
-    final statusSekarang = orderIndex != -1 ? daftarOrder[orderIndex].status : null;
-
-    print('📊 Status sekarang: $statusSekarang → akan jadi: $statusBaruOrder');
+    final nomorWo = daftarDetail.first.nomorWo;
+    final orderIndex = daftarOrder.indexWhere((o) => o.nomorWo == nomorWo);
+    final statusSekarang =
+        orderIndex != -1 ? daftarOrder[orderIndex].status : null;
 
     if (statusSekarang == statusBaruOrder) {
-      print('ℹ️ Status sama, skip update');
       return;
     }
 
     try {
-      final result = await _supabase
-          .from('order_service')
-          .update({'status': statusBaruOrder})
-          .eq('nomor_wo', nomorWo)
-          .select();
-
-      print('✅ Supabase diupdate: $result');
-
       if (orderIndex != -1) {
         daftarOrder[orderIndex] = daftarOrder[orderIndex].copyWith(
           status: statusBaruOrder,
         );
-        print('✅ daftarOrder lokal → $statusBaruOrder');
       }
     } catch (e) {
-      print('❌ Gagal update order status: $e');
+      rethrow;
     }
   }
 
@@ -248,12 +218,9 @@ class OrderDetailViewModel extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    print('🔍 nomorWo: $nomorWo');
 
     try {
-      final response = await _supabase
-          .from('order_service_detail')
-          .select('''
+      final response = await _supabase.from('order_service_detail').select('''
             id,
             nomor_wo,
             order_kerja_id,
@@ -265,22 +232,16 @@ class OrderDetailViewModel extends ChangeNotifier {
               nama,
               kode
             )
-          ''')
-          .eq('nomor_wo', nomorWo)
-          .order('created_at', ascending: true);
-
-      print('📦 Detail response: $response');
+          ''').eq('nomor_wo', nomorWo).order('created_at', ascending: true);
 
       daftarDetail = (response as List)
-          .map((item) => OrderServiceDetail.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              OrderServiceDetail.fromJson(item as Map<String, dynamic>))
           .toList();
-
-      print('✅ daftarDetail: ${daftarDetail.length} item');
 
       await _cekDanUpdateStatusOrder();
     } catch (e) {
       errorMessage = 'Gagal memuat detail: $e';
-      print('❌ Error detail: $e');
     }
 
     isLoading = false;
@@ -295,53 +256,48 @@ class OrderDetailViewModel extends ChangeNotifier {
     String? catatan,
   }) async {
     try {
-      print('📤 Update status item $detailId → ${statusBaru.label}');
-
-      final result = await _supabase
-          .from('order_service_detail')
-          .update({
-            'status'         : statusBaru.label,
-            'catatan_teknisi': catatan,
-          })
-          .eq('id', detailId)
-          .select();
-
-      print('✅ Result Supabase: $result');
-
       final index = daftarDetail.indexWhere((d) => d.id == detailId);
       if (index != -1) {
         daftarDetail[index] = daftarDetail[index].copyWith(
-          status         : statusBaru,
-          catatanTeknisi : catatan,
+          status: statusBaru,
+          catatanTeknisi: catatan,
         );
-        print('✅ Lokal diupdate index $index → ${statusBaru.label}');
       }
-
       await _cekDanUpdateStatusOrder();
-
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
     } catch (e) {
       errorMessage = 'Gagal memperbarui status: $e';
-      print('❌ Error ubah status: $e');
       notifyListeners();
     }
   }
-
-  // ── Logic Reminder Kilometer Simple ─────────────────────────
   
-  /// Menghitung sisa kilometer berdasarkan odometer target (odometer_terakhir) 
-  /// dikurangi dengan odometer saat ini yang dimasukkan oleh user.
-  int hitungSisaKilometer(int odometerInputUser) {
-    return kmTerakhir - odometerInputUser;
+  Future<bool> finalisasiOrder(int nomorWo) async {
+    try {
+      await _supabase
+          .from('order_service')
+          .update({'status': 'Selesai'})
+          .eq('nomor_wo', nomorWo);
+
+      // Update local state
+      final index = daftarOrder.indexWhere((o) => o.nomorWo == nomorWo);
+      if (index != -1) {
+        daftarOrder[index] = daftarOrder[index].copyWith(status: 'Selesai');
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
-  /// Menghasilkan pesan reminder berdasarkan sisa kilometer.
-  /// UI bisa memanggil ini dengan memberikan odometer yang dimasukkan user.
+int hitungSisaKilometer(int odometerInputUser) {
+    return kmTerakhir - odometerInputUser;
+  }
   String getPesanReminder(int odometerInputUser) {
     if (kmTerakhir == 0) return 'Target odometer belum diatur';
-    
+
     final sisa = hitungSisaKilometer(odometerInputUser);
     if (sisa < 0) {
       return 'OVERDUE: Terlewat ${sisa.abs()} km dari jadwal service';

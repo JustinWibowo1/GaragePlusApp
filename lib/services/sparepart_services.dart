@@ -18,7 +18,6 @@ class SparepartServices {
 
       return response.map((item) => Sparepart.fromJson(item)).toList();
     } catch (e) {
-      print('❌ Error fetch sparepart by kategori: $e');
       return [];
     }
   }
@@ -40,7 +39,6 @@ class SparepartServices {
 
       return response.map((item) => Sparepart.fromJson(item)).toList();
     } catch (e) {
-      print('❌ Error fetch sparepart by kategori list: $e');
       return [];
     }
   }
@@ -55,7 +53,6 @@ class SparepartServices {
 
       return response.map((item) => Sparepart.fromJson(item)).toList();
     } catch (e) {
-      print('❌ Error fetch semua sparepart: $e');
       return [];
     }
   }
@@ -75,7 +72,6 @@ class SparepartServices {
 
       return response.map((item) => Sparepart.fromJson(item)).toList();
     } catch (e) {
-      print('❌ Error cari sparepart: $e');
       return [];
     }
   }

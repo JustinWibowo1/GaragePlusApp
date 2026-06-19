@@ -28,7 +28,6 @@ class OrderKerjaServices {
           .map((item) => OrderKerja.fromJson(item))
           .toList();
     } catch (e) {
-      print('❌ Error fetch semua kerja: $e');
       return [];
     }
   }
@@ -60,7 +59,6 @@ class OrderKerjaServices {
         return mesinOk && transmisiOk;
       }).toList();
     } catch (e) {
-      print('❌ Error fetch kerja sesuai mobil: $e');
       return [];
     }
   }

@@ -67,4 +67,26 @@ class Customer {
           : null,
     );
   }
+
+  /// Gabungan kota + alamat untuk tampilan di Work Order PDF
+  String get alamatLengkap => [kotaPemilik, alamatPemilik]
+      .where((s) => s != null && s.trim().isNotEmpty)
+      .join(', ');
+
+  Map<String, dynamic> toJson() => {
+    'nomor_rangka'     : nomorRangka,
+    'nomor_mesin'      : nomorMesin,
+    'nomor_polisi'     : nomorPolisi,
+    'jenis_mobil'      : jenisMobil,
+    'tipe_mobil'       : tipeMobil,
+    'tahun'            : tahun,
+    'tipe_mesin'       : tipeMesin,
+    'tipe_transmisi'   : tipeTransmisi,
+    'nama_pemilik'     : namaPemilik,
+    'alamat_pemilik'   : alamatPemilik,
+    'no_telepon'       : noTelepon,
+    'nama_perusahaan'  : namaPerusahaan,
+    'kota_pemilik'     : kotaPemilik,
+    'odometer_terakhir': odometerTerakhir,
+  };
 }

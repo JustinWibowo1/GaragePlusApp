@@ -30,7 +30,6 @@ class OrderServiceDetailServices {
           .map((item) => OrderServiceDetail.fromJson(item))
           .toList();
     } catch (e) {
-      print('Error fetch detail: $e');
       return [];
     }
   }
@@ -50,7 +49,6 @@ class OrderServiceDetailServices {
           .eq('id', detailId);
       return true;
     } catch (e) {
-      print('Error update status item: $e');
       return false;
     }
   }

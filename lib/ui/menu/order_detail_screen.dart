@@ -2,49 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/order_service_models.dart';
 import '../../models/order_kerja_models.dart';
+import '../../models/customer_models.dart';
 import '../../viewModel/order_detail_viewmodel.dart';
 import 'order_item_detail_screen.dart';
 import '../../app_colors.dart';
 import '../../component_apps.dart';
 
 const _kMonths = [
-  '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des',
+  '',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agt',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des',
 ];
 
 String _formatCurrency(int amount) => amount
     .toString()
     .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
 
-
 class OrderDetailScreen extends StatefulWidget {
-  final String customerId;
-  final String nomorPolisi;
-  final String namaPemilik;
-  final String telepon;
-  final String alamat;
-  final String merkMobil;
-  final String typeMobil;
-  final String tahun;
-  final String noRangka;
-  final String noMesin;
-  final String tipeMesin;     // untuk filter reminder
-  final String tipeTransmisi; // untuk filter reminder
+  final Customer customer;
 
   const OrderDetailScreen({
     Key? key,
-    required this.customerId,
-    required this.nomorPolisi,
-    required this.namaPemilik,
-    this.telepon       = '',
-    this.alamat        = '',
-    this.merkMobil     = '',
-    this.typeMobil     = '',
-    this.tahun         = '',
-    this.noRangka      = '',
-    this.noMesin       = '',
-    this.tipeMesin     = '',
-    this.tipeTransmisi = '',
+    required this.customer,
   }) : super(key: key);
 
   @override
@@ -52,7 +41,7 @@ class OrderDetailScreen extends StatefulWidget {
 }
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
-  final OrderDetailViewModel _vm          = OrderDetailViewModel();
+  final OrderDetailViewModel _vm = OrderDetailViewModel();
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
@@ -60,9 +49,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   void initState() {
     super.initState();
     _vm.muatOrderByCustomer(
-      widget.customerId,
-      tipeMesin     : widget.tipeMesin,
-      tipeTransmisi : widget.tipeTransmisi,
+      widget.customer.nomorRangka,
+      tipeMesin: widget.customer.tipeMesin,
+      tipeTransmisi: widget.customer.tipeTransmisi,
     );
     _searchCtrl.addListener(
       () => setState(() => _searchQuery = _searchCtrl.text.toLowerCase()),
@@ -71,17 +60,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   @override
   void dispose() {
+    _vm.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
 
   List<OrderServiceSummary> get _filteredOrders {
     if (_searchQuery.isEmpty) return _vm.daftarOrder;
-    return _vm.daftarOrder.where((o) =>
-      o.nomorWoDisplay.toLowerCase().contains(_searchQuery) ||
-      o.catatanKeluhan.toLowerCase().contains(_searchQuery) ||
-      o.status.toLowerCase().contains(_searchQuery),
-    ).toList();
+    return _vm.daftarOrder
+        .where(
+          (o) =>
+              o.nomorWoDisplay.toLowerCase().contains(_searchQuery) ||
+              o.catatanKeluhan.toLowerCase().contains(_searchQuery) ||
+              o.status.toLowerCase().contains(_searchQuery),
+        )
+        .toList();
   }
 
   void _openDetail(OrderServiceSummary order) {
@@ -90,18 +83,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       context,
       AppSlideUpRoute(
         page: OrderItemDetailScreen(
-          vm          : _vm,
-          nomorWo     : order.nomorWo,
-          nomorPolisi : widget.nomorPolisi,
-          namaPemilik : widget.namaPemilik,
-          tanggal     : order.createdAt,
-          telepon     : widget.telepon,
-          alamat      : widget.alamat,
-          merkMobil   : widget.merkMobil,
-          typeMobil   : widget.typeMobil,
-          tahun       : widget.tahun,
-          noRangka    : widget.noRangka,
-          noMesin     : widget.noMesin,
+          vm: _vm,
+          nomorWo: order.nomorWo,
+          customer: widget.customer,
         ),
       ),
     );
@@ -124,7 +108,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               slivers: [
                 SliverToBoxAdapter(
                   child: _HeroHeader(
-                    widget    : widget,
+                    widget: widget,
                     totalVisit: _vm.daftarOrder.length,
                     kmTerakhir: _vm.kmTerakhir,
                   ),
@@ -140,7 +124,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           const SizedBox(height: 16),
                         ],
                         AppSearchBar(
-                            controller: _searchCtrl, 
+                            controller: _searchCtrl,
                             hintText: 'Cari nomor WO atau keluhan...'),
                         const SizedBox(height: 12),
                         const Padding(
@@ -148,9 +132,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Text(
                             'RIWAYAT SERVICE',
                             style: TextStyle(
-                              fontSize     : 10,
-                              fontWeight   : FontWeight.w700,
-                              color        : Colors.grey,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.grey,
                               letterSpacing: 1.0,
                             ),
                           ),
@@ -199,8 +183,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const SizedBox(height: 12),
               Text(
                 'Tidak ada hasil untuk "$_searchQuery"',
-                style:
-                    const TextStyle(color: Colors.grey, fontSize: 14),
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ],
           ),
@@ -270,9 +253,9 @@ class _HeroHeader extends StatelessWidget {
         const Text(
           'Riwayat Service',
           style: TextStyle(
-            fontSize     : 20,
-            fontWeight   : FontWeight.w700,
-            color        : Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
             letterSpacing: 1.5,
           ),
         ),
@@ -285,23 +268,23 @@ class _HeroHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.namaPemilik,
+          widget.customer.namaPemilik,
           style: const TextStyle(
-            fontSize  : 26,
+            fontSize: 26,
             fontWeight: FontWeight.w700,
-            color     : Colors.white,
-            height    : 1.1,
+            color: Colors.white,
+            height: 1.1,
           ),
         ),
         const SizedBox(height: 8),
         _MetaChip(
-            icon : Icons.directions_car_outlined,
-            label: 'Nomor Polisi:  ${widget.nomorPolisi}'),
-        if (widget.merkMobil.isNotEmpty) ...[
-          const SizedBox(height: 4),
+            icon: Icons.directions_car_outlined,
+            label: 'Nomor Polisi:  ${widget.customer.nomorPolisi}'),
+        if (widget.customer.jenisMobil.isNotEmpty) ...[
+          const SizedBox(height: 6),
           _MetaChip(
-              icon : Icons.build_outlined,
-              label: '${widget.merkMobil} ${widget.typeMobil}'),
+              icon: Icons.directions_car,
+              label: '${widget.customer.jenisMobil} ${widget.customer.tipeMobil}'),
         ],
       ],
     );
@@ -312,16 +295,16 @@ class _HeroHeader extends StatelessWidget {
       children: [
         Expanded(
           child: _StatCard(
-            label   : 'TOTAL KUNJUNGAN',
-            value   : totalVisit == 0 ? '-' : '$totalVisit',
+            label: 'TOTAL KUNJUNGAN',
+            value: totalVisit == 0 ? '-' : '$totalVisit',
             subtitle: 'kali service',
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
-            label   : 'KM TERAKHIR',
-            value   : kmTerakhir == 0 ? '-' : _formatCurrency(kmTerakhir),
+            label: 'KM TERAKHIR',
+            value: kmTerakhir == 0 ? '-' : _formatCurrency(kmTerakhir),
             subtitle: 'kilometer',
           ),
         ),
@@ -348,13 +331,14 @@ class _ServiceReminderPanelState extends State<_ServiceReminderPanel> {
   @override
   Widget build(BuildContext context) {
     final overdueCount = widget.reminders.where((r) => r.isOverdue).length;
-    final urgentCount  = widget.reminders.where((r) => r.isUrgent && !r.isOverdue).length;
+    final urgentCount =
+        widget.reminders.where((r) => r.isUrgent && !r.isOverdue).length;
 
     return Container(
       decoration: BoxDecoration(
-        color       : const Color(0xFFFFF8F0),
+        color: const Color(0xFFFFF8F0),
         borderRadius: BorderRadius.circular(14),
-        border      : Border.all(color: const Color(0xFFFFD080), width: 1),
+        border: Border.all(color: const Color(0xFFFFD080), width: 1),
       ),
       child: Column(
         children: [
@@ -367,9 +351,10 @@ class _ServiceReminderPanelState extends State<_ServiceReminderPanel> {
               child: Row(
                 children: [
                   Container(
-                    width: 28, height: 28,
+                    width: 28,
+                    height: 28,
                     decoration: BoxDecoration(
-                      color       : const Color(0xFFFF9800).withOpacity(0.15),
+                      color: const Color(0xFFFF9800).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.warning_amber_rounded,
@@ -383,9 +368,9 @@ class _ServiceReminderPanelState extends State<_ServiceReminderPanel> {
                         const Text(
                           'SERVICE PERLU PERHATIAN',
                           style: TextStyle(
-                            fontSize     : 10,
-                            fontWeight   : FontWeight.w800,
-                            color        : Color(0xFFBF6000),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFBF6000),
                             letterSpacing: 0.8,
                           ),
                         ),
@@ -393,9 +378,9 @@ class _ServiceReminderPanelState extends State<_ServiceReminderPanel> {
                         Text(
                           _buildSummaryText(overdueCount, urgentCount),
                           style: const TextStyle(
-                            fontSize  : 12,
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color     : Color(0xFF8A5200),
+                            color: Color(0xFF8A5200),
                           ),
                         ),
                       ],
@@ -405,7 +390,7 @@ class _ServiceReminderPanelState extends State<_ServiceReminderPanel> {
                     _expanded
                         ? Icons.keyboard_arrow_up_rounded
                         : Icons.keyboard_arrow_down_rounded,
-                    size : 20,
+                    size: 20,
                     color: const Color(0xFFBF6000),
                   ),
                 ],
@@ -426,7 +411,7 @@ class _ServiceReminderPanelState extends State<_ServiceReminderPanel> {
   String _buildSummaryText(int overdue, int urgent) {
     final parts = <String>[];
     if (overdue > 0) parts.add('$overdue sudah lewat jadwal');
-    if (urgent  > 0) parts.add('$urgent hampir jatuh tempo');
+    if (urgent > 0) parts.add('$urgent hampir jatuh tempo');
     return parts.join(' • ');
   }
 }
@@ -439,15 +424,11 @@ class _ReminderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOverdue = item.isOverdue;
 
-    final Color labelColor = isOverdue
-        ? const Color(0xFFD32F2F)
-        : const Color(0xFFE65100);
-    final Color bgColor = isOverdue
-        ? const Color(0xFFFFEBEE)
-        : const Color(0xFFFFF3E0);
-    final String badgeText = isOverdue
-        ? 'OVERDUE'
-        : 'SEGERA';
+    final Color labelColor =
+        isOverdue ? const Color(0xFFD32F2F) : const Color(0xFFE65100);
+    final Color bgColor =
+        isOverdue ? const Color(0xFFFFEBEE) : const Color(0xFFFFF3E0);
+    final String badgeText = isOverdue ? 'OVERDUE' : 'SEGERA';
     final String desc = isOverdue
         ? 'Lewat ${_formatCurrency(item.sisaKm.abs())} km dari jadwal'
         : 'Sisa ${_formatCurrency(item.sisaKm)} km';
@@ -462,7 +443,7 @@ class _ReminderRow extends StatelessWidget {
           // Icon
           Icon(
             isOverdue ? Icons.error_outline : Icons.schedule_rounded,
-            size : 16,
+            size: 16,
             color: labelColor,
           ),
           const SizedBox(width: 10),
@@ -474,9 +455,9 @@ class _ReminderRow extends StatelessWidget {
                 Text(
                   item.nama,
                   style: TextStyle(
-                    fontSize  : 13,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color     : isOverdue
+                    color: isOverdue
                         ? const Color(0xFFB71C1C)
                         : const Color(0xFF6D4C00),
                   ),
@@ -486,7 +467,7 @@ class _ReminderRow extends StatelessWidget {
                   desc,
                   style: TextStyle(
                     fontSize: 11,
-                    color   : isOverdue
+                    color: isOverdue
                         ? const Color(0xFFE57373)
                         : const Color(0xFFBF8000),
                   ),
@@ -498,16 +479,16 @@ class _ReminderRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color       : bgColor,
+              color: bgColor,
               borderRadius: BorderRadius.circular(6),
-              border      : Border.all(color: labelColor.withOpacity(0.35)),
+              border: Border.all(color: labelColor.withOpacity(0.35)),
             ),
             child: Text(
               badgeText,
               style: TextStyle(
-                fontSize     : 9,
-                fontWeight   : FontWeight.w800,
-                color        : labelColor,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: labelColor,
                 letterSpacing: 0.5,
               ),
             ),
@@ -530,7 +511,7 @@ class _RoundedTop extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color       : AppColors.background,
+        color: AppColors.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
@@ -556,7 +537,7 @@ class _ServiceCard extends StatefulWidget {
 class _ServiceCardState extends State<_ServiceCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
-    vsync   : this,
+    vsync: this,
     duration: const Duration(milliseconds: 120),
   );
 
@@ -573,48 +554,46 @@ class _ServiceCardState extends State<_ServiceCard>
 
   @override
   Widget build(BuildContext context) {
-    final order   = widget.order;
+    final order = widget.order;
     AppStatusColors.of(order.status);
     final pending = AppStatusColors.isPending(order.status);
 
     return MouseRegion(
-      cursor  : SystemMouseCursors.click,
-      onEnter : (_) => setState(() => _isHovered = true),
-      onExit  : (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: () async {
           await _ctrl.forward();
           await _ctrl.reverse();
           widget.onTap();
         },
-        onTapDown  : (_) => _ctrl.forward(),
-        onTapCancel: ()  => _ctrl.reverse(),
+        onTapDown: (_) => _ctrl.forward(),
+        onTapCancel: () => _ctrl.reverse(),
         child: ScaleTransition(
           scale: _scale,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            curve   : Curves.easeOut,
+            curve: Curves.easeOut,
             decoration: BoxDecoration(
-              color       : Colors.white,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border      : Border.all(
-                color: _isHovered
-                    ? const Color(0xFFCCCCCC)
-                    : AppColors.greyBg,
+              border: Border.all(
+                color: _isHovered ? const Color(0xFFCCCCCC) : AppColors.greyBg,
               ),
               boxShadow: _isHovered
                   ? [
                       BoxShadow(
-                        color     : Colors.black.withOpacity(0.10),
+                        color: Colors.black.withOpacity(0.10),
                         blurRadius: 16,
-                        offset    : const Offset(0, 6),
+                        offset: const Offset(0, 6),
                       )
                     ]
                   : [
                       BoxShadow(
-                        color     : Colors.black.withOpacity(0.03),
+                        color: Colors.black.withOpacity(0.03),
                         blurRadius: 4,
-                        offset    : const Offset(0, 2),
+                        offset: const Offset(0, 2),
                       )
                     ],
             ),
@@ -627,21 +606,19 @@ class _ServiceCardState extends State<_ServiceCard>
                     _DateColumn(date: order.createdAt, pending: pending),
                     Expanded(
                       child: Padding(
-                        padding:
-                            const EdgeInsets.fromLTRB(12, 12, 14, 12),
+                        padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
                                   order.nomorWoDisplay,
                                   style: const TextStyle(
-                                    fontSize     : 11,
-                                    fontWeight   : FontWeight.w700,
-                                    color        : AppColors.blueLink,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.blueLink,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
@@ -654,28 +631,26 @@ class _ServiceCardState extends State<_ServiceCard>
                                   ? order.catatanKeluhan
                                   : '-',
                               style: const TextStyle(
-                                fontSize  : 13,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color     : AppColors.navy,
+                                color: AppColors.navy,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 10),
-                            const Divider(
-                                height: 1, color: AppColors.greyBg),
+                            const Divider(height: 1, color: AppColors.greyBg),
                             const SizedBox(height: 8),
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 _KmChip(km: order.kilometer),
                                 Text(
                                   'Rp ${_formatCurrency(order.totalTagihan)}',
                                   style: const TextStyle(
-                                    fontSize  : 13,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color     : AppColors.navy,
+                                    color: AppColors.navy,
                                   ),
                                 ),
                               ],
@@ -723,18 +698,18 @@ class _DateColumn extends StatelessWidget {
           Text(
             date.day.toString().padLeft(2, '0'),
             style: const TextStyle(
-              fontSize  : 20,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
-              color     : AppColors.navy,
-              height    : 1.0,
+              color: AppColors.navy,
+              height: 1.0,
             ),
           ),
           Text(
             _kMonths[date.month],
             style: const TextStyle(
-              fontSize     : 10,
-              fontWeight   : FontWeight.w700,
-              color        : AppColors.navy,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.navy,
               letterSpacing: 0.4,
             ),
           ),
@@ -787,7 +762,7 @@ class _MetaChip extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 12,
-            color   : Colors.white.withOpacity(0.55),
+            color: Colors.white.withOpacity(0.55),
           ),
         ),
       ],
@@ -811,10 +786,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color       : Colors.white.withOpacity(0.08),
+        color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(14),
-        border      : Border.all(
-            color: Colors.white.withOpacity(0.12), width: 0.5),
+        border: Border.all(color: Colors.white.withOpacity(0.12), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -822,9 +796,9 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize     : 9,
-              fontWeight   : FontWeight.w700,
-              color        : Colors.white.withOpacity(0.4),
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withOpacity(0.4),
               letterSpacing: 0.8,
             ),
           ),
@@ -832,10 +806,10 @@ class _StatCard extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontSize  : 24,
+              fontSize: 24,
               fontWeight: FontWeight.w700,
-              color     : Colors.white,
-              height    : 1.0,
+              color: Colors.white,
+              height: 1.0,
             ),
           ),
           const SizedBox(height: 2),
@@ -843,7 +817,7 @@ class _StatCard extends StatelessWidget {
             subtitle,
             style: TextStyle(
               fontSize: 10,
-              color   : Colors.white.withOpacity(0.35),
+              color: Colors.white.withOpacity(0.35),
             ),
           ),
         ],

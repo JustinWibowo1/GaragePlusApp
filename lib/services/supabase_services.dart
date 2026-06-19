@@ -17,12 +17,10 @@ class SupabaseServices {
         await _supabase.from('user').insert({
           'id': newUserId,
           'name': name,
-          'role': 'admin',
+          'role': role, // ← gunakan parameter, bukan hardcode 'admin'
         });
-        print('User successfully created!');
       }
     } catch (error) {
-      print('Error creating user: $error');
       rethrow;
     }
   }
@@ -33,9 +31,7 @@ class SupabaseServices {
         email: email,
         password: password,
       );
-      print('User successfully logged in!');
     } catch (error) {
-      print('Error logging in user: $error');
       rethrow;
     }
   }
@@ -43,9 +39,8 @@ class SupabaseServices {
   Future<void> logoutUser() async {
     try {
       await _supabase.auth.signOut();
-      print('User has been logged out.');
     } catch (error) {
-      print('Logout failed: $error');
+      rethrow;
     }
   }
 }

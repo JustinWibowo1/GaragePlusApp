@@ -35,7 +35,6 @@ class _RoleRouterState extends State<RoleRouter> {
       });
       
     } catch (e) {
-      debugPrint('Error fetching role: $e');
       if (!mounted) return;
       setState(() {
         _isLoading = false;

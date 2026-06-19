@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/customer_models.dart';
 
 class CarService {
   final _supabase = Supabase.instance.client;
@@ -9,23 +10,31 @@ class CarService {
 
   Future<bool> isCarExists(String rangka) async {
     final response = await _supabase
-      .from('customer')
-      .select('nomor_rangka')
-      .eq('nomor_rangka', rangka);
-      
-    return response.isNotEmpty; 
+        .from('customer')
+        .select('nomor_rangka')
+        .eq('nomor_rangka', rangka);
+    return response.isNotEmpty;
   }
 
-  Future<List<Map<String, dynamic>>> fetchAllCars() async {
+  Future<List<Customer>> fetchAllCars() async {
     try {
       final data = await _supabase
           .from('customer')
           .select()
           .isFilter('deleted_at', null)
           .order('created_at', ascending: false);
-      return data;
+      return (data as List)
+          .map((e) => Customer.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       throw Exception('Failed to fetch cars: $e');
     }
+  }
+
+  Future<void> updateCar(String originalRangka, Map<String, dynamic> data) async {
+    await _supabase
+        .from('customer')
+        .update(data)
+        .eq('nomor_rangka', originalRangka);
   }
 }

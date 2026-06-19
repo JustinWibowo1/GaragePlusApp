@@ -17,10 +17,8 @@ class SparepartViewModel extends ChangeNotifier {
       daftarSparepart = await _service.fetchByKategori(kategoriId);
       daftarSparepartAsli = daftarSparepart;
       errorMessage = null;
-      print('✅ Sparepart dimuat: ${daftarSparepart.length} item');
     } catch (e) {
       errorMessage = 'Gagal memuat sparepart: $e';
-      print('❌ $errorMessage');
     }
     _setLoading(false);
   }
@@ -32,10 +30,8 @@ class SparepartViewModel extends ChangeNotifier {
       daftarSparepart = await _service.fetchByKategoriList(kategoriIds);
       daftarSparepartAsli = daftarSparepart;
       errorMessage = null;
-      print('✅ Sparepart dimuat: ${daftarSparepart.length} item');
     } catch (e) {
       errorMessage = 'Gagal memuat sparepart: $e';
-      print('❌ $errorMessage');
     }
     _setLoading(false);
   }
