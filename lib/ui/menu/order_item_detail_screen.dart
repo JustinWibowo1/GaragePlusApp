@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../app_animations.dart';
 import '../../models/service_details_models.dart';
+import '../../models/customer_models.dart';
 import '../../viewModel/order_detail_viewmodel.dart';
 import '../../services/pdf_printer_service.dart';
 import '../../services/work_order_filler.dart';
 import 'package:intl/intl.dart';
 import '../../app_colors.dart';
-
-// Extracted Widgets & Dialogs
 import '../widgets/vehicle_passport_card.dart';
 import '../widgets/task_ledger_table.dart';
 import '../dialogs/work_order_dialogs.dart';
@@ -15,31 +14,15 @@ import '../dialogs/work_order_dialogs.dart';
 class OrderItemDetailScreen extends StatefulWidget {
   final OrderDetailViewModel vm;
   final int nomorWo;
-  final String nomorPolisi;
-  final String namaPemilik;
   final DateTime tanggal;
-  final String telepon;
-  final String alamat;
-  final String merkMobil;
-  final String typeMobil;
-  final String tahun;
-  final String noRangka;
-  final String noMesin;
+  final Customer customer;
 
   const OrderItemDetailScreen({
     Key? key,
     required this.vm,
     required this.nomorWo,
-    required this.nomorPolisi,
-    required this.namaPemilik,
     required this.tanggal,
-    this.telepon = '',
-    this.alamat = '',
-    this.merkMobil = '',
-    this.typeMobil = '',
-    this.tahun = '',
-    this.noRangka = '',
-    this.noMesin = '',
+    required this.customer,
   }) : super(key: key);
 
   @override
@@ -87,15 +70,15 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
       final pdfBytes = await WorkOrderFiller.fill(
         order: order,
         details: details,
-        namaPemilik: widget.namaPemilik,
-        nomorPolisi: widget.nomorPolisi,
-        telepon: widget.telepon,
-        alamat: widget.alamat,
-        merkMobil: widget.merkMobil,
-        typeMobil: widget.typeMobil,
-        tahun: widget.tahun,
-        noRangka: widget.noRangka,
-        noMesin: widget.noMesin,
+        namaPemilik: widget.customer.namaPemilik,
+        nomorPolisi: widget.customer.nomorPolisi,
+        telepon: widget.customer.noTelepon ?? '',
+        alamat: widget.customer.alamatLengkap,
+        merkMobil: widget.customer.jenisMobil,
+        typeMobil: widget.customer.tipeMobil,
+        tahun: widget.customer.tahun.toString(),
+        noRangka: widget.customer.nomorRangka,
+        noMesin: widget.customer.nomorMesin,
         batteryAwal: formResult['batteryAwal'] ?? '',
         batteryStater: formResult['batteryStater'] ?? '',
         batteryPengisian: formResult['batteryPengisian'] ?? '',
@@ -239,12 +222,26 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Customer: ${widget.namaPemilik}',
+                                widget.customer.namaPemilik,
                                 style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textGrey,
-                                ),
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.navy),
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  const Icon(Icons.directions_car,
+                                      size: 16, color: Colors.blue),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    widget.customer.nomorPolisi,
+                                    style: const TextStyle(
+                                        fontSize: 15,
+                                        color: AppColors.navy,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -300,11 +297,11 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
 
                     // ── Vehicle Passport Card ───────────────────────────
                     VehiclePassportCard(
-                      merkMobil: widget.merkMobil,
-                      typeMobil: widget.typeMobil,
-                      nomorPolisi: widget.nomorPolisi,
-                      noRangka: widget.noRangka,
-                      noMesin: widget.noMesin,
+                      merkMobil: widget.customer.jenisMobil,
+                      typeMobil: widget.customer.tipeMobil,
+                      nomorPolisi: widget.customer.nomorPolisi,
+                      noRangka: widget.customer.nomorRangka,
+                      noMesin: widget.customer.nomorMesin,
                       odometer: _getOdometer(),
                       progress: widget.vm.progress,
                       totalItem: widget.vm.totalItem,

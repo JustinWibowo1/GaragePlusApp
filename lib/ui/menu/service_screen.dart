@@ -258,17 +258,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => OrderKerjaScreen(
-                        customerId       : car.nomorRangka,
-                        namaPemilik      : car.namaPemilik,
-                        nomorTelepon     : car.noTelepon ?? '',
-                        alamat           : car.alamatLengkap,
-                        nomorRangka      : car.nomorRangka,
-                        mesinMobil       : car.tipeMesin,
-                        transmisiMobil   : car.tipeTransmisi,
-                        namaMobil        : namaMobil,
-                        nomorPolisi      : car.nomorPolisi,
-                        nomorMesin       : car.nomorMesin,
-                        odometerTerakhir : car.odometerTerakhir,
+                        customer: car,
                       ),
                     ),
                   );
@@ -285,18 +275,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => OrderDetailScreen(
-                        customerId    : car.nomorRangka,
-                        nomorPolisi   : car.nomorPolisi,
-                        namaPemilik   : car.namaPemilik,
-                        telepon       : car.noTelepon ?? '',
-                        alamat        : car.alamatLengkap,
-                        merkMobil     : car.jenisMobil,
-                        typeMobil     : car.tipeMobil,
-                        tahun         : car.tahun.toString(),
-                        noRangka      : car.nomorRangka,
-                        noMesin       : car.nomorMesin,
-                        tipeMesin     : car.tipeMesin,
-                        tipeTransmisi : car.tipeTransmisi,
+                        customer: car,
                       ),
                     ),
                   );

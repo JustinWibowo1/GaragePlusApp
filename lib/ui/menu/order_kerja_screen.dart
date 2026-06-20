@@ -1,31 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../models/order_kerja_models.dart';
 import '../../models/customer_models.dart';
 import '../../viewModel/order_kerja_viewmodel.dart';
 import '../../app_colors.dart';
-import '../../component_apps.dart';
-
-class ThousandsSeparatorFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final digitsOnly = newValue.text.replaceAll('.', '');
-    if (digitsOnly.isEmpty) return newValue.copyWith(text: '');
-
-    final formatted = digitsOnly.replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
-
-    return newValue.copyWith(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
+import '../widgets/order_kerja/vehicle_info_card.dart';
+import '../widgets/order_kerja/complaint_form_card.dart';
+import '../widgets/order_kerja/service_catalog_list.dart';
+import '../widgets/order_kerja/order_summary_panel.dart';
 
 class OrderKerjaScreen extends StatefulWidget {
   final Customer customer;
@@ -46,8 +27,8 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
 
   @override
   void initState() {
-    super.initState();    // Fetch data services based on machine/transmission type
-    _orderKerjaViewModel.fetchJasaByMobil(
+    super.initState();
+    _orderKerjaViewModel.muatKerjaUntukMobil(
       mesin: widget.customer.tipeMesin,
       transmisi: widget.customer.tipeTransmisi,
     );
@@ -68,6 +49,13 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
     _keluhanController.dispose();
     _kilometerController.dispose();
     super.dispose();
+  }
+
+  String _formatRupiah(int value) {
+    return value.toString().replaceAllMapped(
+          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
   }
 
   /// Dialog pilih sparepart berdasarkan kategori pekerjaan
@@ -273,36 +261,16 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
     );
   }
 
-  String _formatRupiah(int value) {
-    return value.toString().replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]}.',
-        );
-  }
-
-  Widget _buildInfoColumn(String title, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(
-              fontSize: 15,
-              color: AppColors.navy,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5),
-        ),
-      ],
-    );
+  void _handleServiceSelection(BuildContext context, dynamic jasaDynamic, List<dynamic> sparepartTerpilih) {
+    OrderKerja jasa = jasaDynamic as OrderKerja;
+    final isSelected = _orderKerjaViewModel.isJasaDipilih(jasa);
+    if (isSelected) {
+      _orderKerjaViewModel.hapusDariKeranjang(jasa);
+    } else if (jasa.requiresSparepart) {
+      _tampilDialogPilihSparepart(jasa);
+    } else {
+      _orderKerjaViewModel.toggleKeranjang(jasa);
+    }
   }
 
   @override
@@ -334,380 +302,19 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                             color: AppColors.navy)),
                     const SizedBox(height: 24),
 
-                    // ── Card Info Mobil ──
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5))
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            height: 120,
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(24),
-                            decoration: const BoxDecoration(
-                              borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(16),
-                                  topRight: Radius.circular(16)),
-                              gradient: const LinearGradient(
-                                  colors: [
-                                    AppColors.navyDeep,
-                                    AppColors.navyDark
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.baseline,
-                                  textBaseline: TextBaseline.alphabetic,
-                                  children: [
-                                    Text((widget.customer.tipeMobil.isNotEmpty ? widget.customer.tipeMobil : widget.customer.jenisMobil).toUpperCase(),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 26,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 0.5)),
-                                    Text(
-                                        '${widget.customer.namaPemilik} (${widget.customer.noTelepon ?? '-'})',
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600)),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.baseline,
-                                  textBaseline: TextBaseline.alphabetic,
-                                  children: [
-                                    Text(
-                                        '${widget.customer.tipeMesin} • ${widget.customer.tipeTransmisi}',
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            letterSpacing: 0.5)),
-                                    Text(widget.customer.alamatLengkap,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 14)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 20),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _buildInfoColumn(
-                                    'Nomor Polisi', widget.customer.nomorPolisi),
-                                _buildInfoColumn(
-                                    'Nomor Rangka', widget.customer.nomorRangka),
-                                _buildInfoColumn(
-                                    'Nomor Mesin', widget.customer.nomorMesin),
-                                _buildInfoColumn('ODOMETER', '- KM'),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    VehicleInfoCard(customer: widget.customer),
+                    const SizedBox(height: 32),
+
+                    ComplaintFormCard(
+                      vm: _orderKerjaViewModel,
+                      keluhanController: _keluhanController,
+                      kilometerController: _kilometerController,
                     ),
                     const SizedBox(height: 32),
 
-                    // ── Catatan Keluhan ──
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5))
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(children: const [
-                            Icon(Icons.edit_note,
-                                color: AppColors.navy, size: 24),
-                            SizedBox(width: 8),
-                            Text('Catatan / Keluhan Konsumen',
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.navy)),
-                          ]),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _keluhanController,
-                            maxLines: 5,
-                            decoration: InputDecoration(
-                              hintText:
-                                  'Dokumentasikan keluhan spesifik atau permintaan khusus dari pelanggan di sini...',
-                              hintStyle: TextStyle(
-                                  color: Colors.grey[400], fontSize: 14),
-                              filled: true,
-                              fillColor: Colors.grey[50],
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none),
-                              contentPadding: const EdgeInsets.all(20),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // ── Input Odometer ──
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          )
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: const [
-                              Icon(Icons.speed_rounded,
-                                  color: AppColors.navy, size: 24),
-                              SizedBox(width: 8),
-                              Text(
-                                'Odometer Saat Ini',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.navy,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Catat kilometer kendaraan saat masuk bengkel untuk keperluan service reminder.',
-                            style: TextStyle(
-                                fontSize: 13, color: Colors.grey.shade500),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _kilometerController,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    ThousandsSeparatorFormatter(),
-                                  ],
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.navy,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: '0',
-                                    hintStyle: TextStyle(
-                                        color: Colors.grey.shade300,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w700),
-                                    suffixText: 'KM',
-                                    suffixStyle: TextStyle(
-                                        color: Colors.grey.shade400,
-                                        fontWeight: FontWeight.w600),
-                                    filled: true,
-                                    fillColor: AppColors.backgroundSection,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: AppColors.navy, width: 1.5),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 16),
-                                  ),
-                                  onChanged: (val) {
-                                    final km =
-                                        int.tryParse(val.replaceAll('.', '')) ??
-                                            0;
-                                    _orderKerjaViewModel.setKilometer(km);
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              // Live display
-                              ListenableBuilder(
-                                listenable: _orderKerjaViewModel,
-                                builder: (context, _) {
-                                  final km = _orderKerjaViewModel.kilometer;
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: km > 0
-                                          ? AppColors.navy
-                                          : AppColors.backgroundInput,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Icon(
-                                          Icons.speed_rounded,
-                                          size: 20,
-                                          color: km > 0
-                                              ? Colors.white
-                                              : Colors.grey.shade400,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          km > 0 ? '✓ Tercatat' : 'Belum',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                            color: km > 0
-                                                ? Colors.white
-                                                : Colors.grey.shade400,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // ── Service Catalog ──
-
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(children: const [
-                              // Icon(Icons.category,
-                              //     color: AppColors.navy, size: 20),
-                              SizedBox(width: 8),
-                              Text('Daftar Order Kerja',
-                                  style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.navy)),
-                            ]),
-                            SizedBox(
-                              width: 250,
-                              child: AppSearchBar(
-                                hintText: 'Cari jasa/layanan...',
-                                onChanged: _orderKerjaViewModel.cariPekerjaan,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ListenableBuilder(
-                          listenable: _orderKerjaViewModel,
-                          builder: (context, child) {
-                            if (_orderKerjaViewModel.isLoading) {
-                              return const Center(
-                                  child: Padding(
-                                      padding: EdgeInsets.all(32.0),
-                                      child: CircularProgressIndicator()));
-                            }
-                            if (_orderKerjaViewModel.errorMessage != null) {
-                              return Center(
-                                  child: Text(
-                                      _orderKerjaViewModel.errorMessage!,
-                                      style:
-                                          const TextStyle(color: Colors.red)));
-                            }
-                            if (_orderKerjaViewModel
-                                .daftarKerjaTampil.isEmpty) {
-                              return Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(32),
-                                decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16)),
-                                child: const Center(
-                                    child: Text('Pekerjaan tidak ditemukan.')),
-                              );
-                            }
-                            return GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                                childAspectRatio: 2.5,
-                              ),
-                              itemCount:
-                                  _orderKerjaViewModel.daftarKerjaTampil.length,
-                              itemBuilder: (context, index) {
-                                final jasa = _orderKerjaViewModel
-                                    .daftarKerjaTampil[index];
-                                final isSelected =
-                                    _orderKerjaViewModel.isJasaDipilih(jasa);
-                                return ServiceCardItem(
-                                    jasa: jasa,
-                                    isSelected: isSelected,
-                                    onTap: () {
-                                      if (isSelected) {
-                                        _orderKerjaViewModel
-                                            .hapusDariKeranjang(jasa);
-                                      } else if (jasa.requiresSparepart) {
-                                        _tampilDialogPilihSparepart(jasa);
-                                      } else {
-                                        _orderKerjaViewModel
-                                            .toggleKeranjang(jasa);
-                                      }
-                                    });
-                              },
-                            );
-                          },
-                        ),
-                      ],
+                    ServiceCatalogList(
+                      vm: _orderKerjaViewModel,
+                      onServiceSelected: _handleServiceSelection,
                     ),
                   ],
                 ),
@@ -719,311 +326,16 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
             Expanded(
               flex: 3,
               child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Container(
-                      height: 80,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200)),
-                      child: const Center(child: Text('Area Teknisi')),
-                    ),
-                    const SizedBox(height: 24),
-                    ListenableBuilder(
-                      listenable: _orderKerjaViewModel,
-                      builder: (context, child) {
-                        final keranjang = _orderKerjaViewModel.keranjangJasa;
-
-                        return Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                              color: AppColors.navyDarkest,
-                              borderRadius: BorderRadius.circular(16)),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Ringkasan Order',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 24),
-                              if (keranjang.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 24),
-                                  child: Text('Belum ada jasa yang dipilih.',
-                                      style: TextStyle(
-                                          color: Colors.white.withOpacity(0.5),
-                                          fontStyle: FontStyle.italic)),
-                                ),
-                              ...keranjang.map((jasa) {
-                                final spareparts = _orderKerjaViewModel
-                                        .sparepartPerPekerjaan[jasa.id] ??
-                                    [];
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                              child: Text('• ${jasa.nama}',
-                                                  style: TextStyle(
-                                                      color: Colors.white
-                                                          .withOpacity(0.9),
-                                                      fontSize: 14))),
-                                          Text(
-                                              'Rp ${_formatRupiah(jasa.estimasiHarga)}',
-                                              style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13)),
-                                        ],
-                                      ),
-                                      ...spareparts.map((sp) => Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 16, top: 4),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Text(
-                                                    '↳ ${sp.sparepart.displayName} x${sp.qty}',
-                                                    style: TextStyle(
-                                                        color: Colors.white
-                                                            .withOpacity(0.6),
-                                                        fontSize: 12)),
-                                                Text(
-                                                    'Rp ${_formatRupiah(sp.subtotal)}',
-                                                    style: TextStyle(
-                                                        color: Colors.white
-                                                            .withOpacity(0.7),
-                                                        fontSize: 12)),
-                                              ],
-                                            ),
-                                          )),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                              const Divider(color: Colors.white24, height: 32),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Total Estimasi',
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 16)),
-                                  Text(
-                                      'Rp ${_formatRupiah(_orderKerjaViewModel.totalEstimasi)}',
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 50,
-                                child: ElevatedButton(
-                                  onPressed: keranjang.isEmpty
-                                      ? null
-                                      : () async {
-                                          // Validasi kilometer
-                                          if (_orderKerjaViewModel.kilometer <=
-                                              0) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                    '⚠️ Masukkan kilometer kendaraan terlebih dahulu'),
-                                                backgroundColor: Colors.orange,
-                                              ),
-                                            );
-                                            return;
-                                          }
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    'Menyimpan pesanan...')),
-                                          );
-                                          bool sukses =
-                                              await _orderKerjaViewModel
-                                                  .simpanOrderKerja(
-                                            customerId: widget.customer.nomorRangka,
-                                            catatanKeluhan:
-                                                _keluhanController.text,
-                                          );
-                                          if (sukses) {
-                                            _keluhanController.clear();
-                                            _kilometerController.clear();
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                    '✅ Order berhasil disimpan!'),
-                                                backgroundColor: Colors.green,
-                                              ),
-                                            );
-                                          } else {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                    '❌ Gagal menyimpan order.'),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
-                                          }
-                                        },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue[600],
-                                    disabledBackgroundColor:
-                                        Colors.white.withOpacity(0.1),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                  child: const Text('Simpan Order',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                child: OrderSummaryPanel(
+                  vm: _orderKerjaViewModel,
+                  customer: widget.customer,
+                  keluhanController: _keluhanController,
+                  kilometerController: _kilometerController,
                 ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class ServiceCardItem extends StatefulWidget {
-  final OrderKerja jasa;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const ServiceCardItem(
-      {Key? key,
-      required this.jasa,
-      required this.isSelected,
-      required this.onTap})
-      : super(key: key);
-
-  @override
-  State<ServiceCardItem> createState() => _ServiceCardItemState();
-}
-
-class _ServiceCardItemState extends State<ServiceCardItem> {
-  bool isHovered = false;
-
-  String _formatRupiah(int value) {
-    return value.toString().replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]}.',
-        );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    bool isActive = isHovered || widget.isSelected;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: widget.isSelected
-            ? Colors.blue.shade50.withOpacity(0.5)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: widget.isSelected
-              ? Colors.blue.shade600
-              : (isHovered ? Colors.blue.shade300 : Colors.grey.shade200),
-          width: widget.isSelected ? 2 : 1,
-        ),
-        boxShadow: isHovered
-            ? [
-                BoxShadow(
-                    color: Colors.blue.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4))
-              ]
-            : [],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                onEnter: (_) => setState(() => isHovered = true),
-                onExit: (_) => setState(() => isHovered = false),
-                child: GestureDetector(
-                  onTap: widget.onTap,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isActive ? Colors.blue[800] : Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      widget.isSelected
-                          ? Icons.check
-                          : (isHovered ? Icons.add : Icons.build),
-                      color: isActive ? Colors.white : Colors.blue[800],
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-              Text('Rp ${_formatRupiah(widget.jasa.estimasiHarga)}',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.grey)),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            widget.jasa.nama,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: AppColors.navy),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Text(widget.jasa.kode,
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-              if (widget.jasa.requiresSparepart) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.inventory_2, size: 12, color: Colors.orange[400]),
-              ],
-            ],
-          ),
-        ],
       ),
     );
   }
