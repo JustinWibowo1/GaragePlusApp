@@ -4,45 +4,32 @@ import '../models/order_kerja_models.dart';
 class OrderKerjaServices {
   final _supabase = Supabase.instance.client;
 
-  /// Query SELECT dengan join ke kategori_sparepart
-  static const _selectWithKategori = '''
-    *,
-    order_kerja_kategori_sparepart (
-      is_required,
-      kategori_sparepart (
-        id, nama, unit
-      )
-    )
-  ''';
-
-  /// Fetch semua pekerjaan aktif
+  /// Fetch semua pekerjaan aktif (tanpa join, schema baru)
   Future<List<OrderKerja>> fetchSemuaKerja() async {
     try {
       final response = await _supabase
           .from('order_kerja')
-          .select(_selectWithKategori)
+          .select('*')
           .eq('is_active', true)
           .order('kode', ascending: true);
 
-      return response
-          .map((item) => OrderKerja.fromJson(item))
-          .toList();
+      return response.map((item) => OrderKerja.fromJson(item)).toList();
     } catch (e) {
       return [];
     }
   }
 
-  /// Fetch pekerjaan yang kompatibel dengan mesin & transmisi mobil
+  /// Fetch pekerjaan yang kompatibel dengan mesin & transmisi mobil.
+  /// Filter dilakukan di sisi client karena PostgREST tidak support
+  /// "contains OR is null" dalam satu filter.
   Future<List<OrderKerja>> fetchKerjaSesuaiMobil({
     required String mesinMobil,
     required String transmisiMobil,
   }) async {
     try {
-      // Ambil semua yang aktif, lalu filter di client
-      // karena PostgREST tidak support "contains OR is null" dalam 1 filter
       final response = await _supabase
           .from('order_kerja')
-          .select(_selectWithKategori)
+          .select('*')
           .eq('is_active', true)
           .order('kode', ascending: true);
 
@@ -50,7 +37,7 @@ class OrderKerjaServices {
           .map((item) => OrderKerja.fromJson(item))
           .toList();
 
-      // Filter: kompatibel jika array null/kosong (universal) ATAU mengandung tipe mobil
+      // Kompatibel jika array null/kosong (universal) ATAU mengandung tipe mobil
       return semuaKerja.where((kerja) {
         final mesinOk = kerja.kompatibilitasMesin.isEmpty ||
             kerja.kompatibilitasMesin.contains(mesinMobil);
@@ -58,6 +45,24 @@ class OrderKerjaServices {
             kerja.kompatibilitasTransmisi.contains(transmisiMobil);
         return mesinOk && transmisiOk;
       }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Fetch pekerjaan yang memiliki interval service (untuk reminder)
+  Future<List<OrderKerja>> fetchServiceRules() async {
+    try {
+      final response = await _supabase
+          .from('order_kerja')
+          .select('id, nama, kode, interval_km, kompatibilitas_mesin, kompatibilitas_transmisi, is_active')
+          .not('interval_km', 'is', null)
+          .eq('is_active', true)
+          .order('interval_km', ascending: true);
+
+      return (response as List)
+          .map((e) => OrderKerja.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       return [];
     }

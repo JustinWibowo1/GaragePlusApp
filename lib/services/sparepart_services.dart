@@ -4,40 +4,37 @@ import '../models/sparepart_models.dart';
 class SparepartServices {
   final _supabase = Supabase.instance.client;
 
-  Future<List<Sparepart>> fetchByKategori(String kategoriId) async {
+  /// Fetch sparepart berdasarkan kategori teks dari order_kerja
+  /// dan filter sesuai tipe mesin / transmisi kendaraan.
+  Future<List<Sparepart>> fetchCocokUntukPekerjaan({
+    required String kategori,
+    String? tipeMesin,
+    String? tipeTransmisi,
+  }) async {
     try {
       final response = await _supabase
           .from('sparepart')
-          .select('''
-            *,
-            kategori_sparepart ( nama )
-          ''')
-          .eq('kategori_id', kategoriId)
+          .select('*')
+          .eq('kategori', kategori)
           .eq('is_active', true)
           .order('nama', ascending: true);
 
-      return response.map((item) => Sparepart.fromJson(item)).toList();
-    } catch (e) {
-      return [];
-    }
-  }
+      final semua = response.map((item) => Sparepart.fromJson(item)).toList();
 
-  /// Fetch sparepart berdasarkan multiple kategori IDs
-  Future<List<Sparepart>> fetchByKategoriList(List<String> kategoriIds) async {
-    if (kategoriIds.isEmpty) return [];
+      // Filter kompatibilitas di sisi client
+      return semua.where((sp) {
+        // Kompatibilitas mesin: kosong = universal
+        final mesinOk = tipeMesin == null ||
+            sp.kompatibilitasMesin.isEmpty ||
+            sp.kompatibilitasMesin.contains(tipeMesin);
 
-    try {
-      final response = await _supabase
-          .from('sparepart')
-          .select('''
-            *,
-            kategori_sparepart ( nama )
-          ''')
-          .inFilter('kategori_id', kategoriIds)
-          .eq('is_active', true)
-          .order('nama', ascending: true);
+        // Kompatibilitas transmisi: kosong = universal
+        final transmisiOk = tipeTransmisi == null ||
+            sp.kompatibilitasTransmisi.isEmpty ||
+            sp.kompatibilitasTransmisi.contains(tipeTransmisi);
 
-      return response.map((item) => Sparepart.fromJson(item)).toList();
+        return mesinOk && transmisiOk;
+      }).toList();
     } catch (e) {
       return [];
     }
@@ -46,10 +43,11 @@ class SparepartServices {
   /// Fetch semua sparepart aktif
   Future<List<Sparepart>> fetchSemua() async {
     try {
-      final response = await _supabase.from('sparepart').select('''
-            *,
-            kategori_sparepart ( nama )
-          ''').eq('is_active', true).order('nama', ascending: true);
+      final response = await _supabase
+          .from('sparepart')
+          .select('*')
+          .eq('is_active', true)
+          .order('nama', ascending: true);
 
       return response.map((item) => Sparepart.fromJson(item)).toList();
     } catch (e) {
@@ -57,15 +55,12 @@ class SparepartServices {
     }
   }
 
-  /// Cari sparepart berdasarkan keyword
+  /// Cari sparepart berdasarkan keyword nama
   Future<List<Sparepart>> cari(String keyword) async {
     try {
       final response = await _supabase
           .from('sparepart')
-          .select('''
-            *,
-            kategori_sparepart ( nama )
-          ''')
+          .select('*')
           .eq('is_active', true)
           .ilike('nama', '%$keyword%')
           .order('nama', ascending: true);

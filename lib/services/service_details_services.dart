@@ -34,6 +34,33 @@ class OrderServiceDetailServices {
     }
   }
 
+  Future<OrderServiceDetail?> insertDetailItem({
+    required int nomorWo,
+    required String orderKerjaId,
+    required int hargaFinal,
+  }) async {
+    try {
+      final response = await _supabase
+          .from('order_service_detail')
+          .insert({
+            'nomor_wo'      : nomorWo,
+            'order_kerja_id': orderKerjaId,
+            'harga_final'   : hargaFinal,
+            'status'        : 'Menunggu',
+          })
+          .select('''
+            id, nomor_wo, order_kerja_id, harga_final,
+            status, catatan_teknisi, created_at,
+            order_kerja ( nama, kode )
+          ''')
+          .single();
+      return OrderServiceDetail.fromJson(response);
+    } catch (e) {
+      return null;
+    }
+  }
+
+
   Future<bool> updateStatusItem({
     required String detailId,
     required StatusItem statusBaru,
@@ -50,6 +77,23 @@ class OrderServiceDetailServices {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchCompletedServiceOdometer(String customerId) async {
+    try {
+      final response = await _supabase
+          .from('order_service_detail')
+          .select('''
+            order_kerja_id,
+            order_service!inner(customer_id, kilometer)
+          ''')
+          .eq('order_service.customer_id', customerId)
+          .eq('status', 'Selesai');
+      
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
     }
   }
 }

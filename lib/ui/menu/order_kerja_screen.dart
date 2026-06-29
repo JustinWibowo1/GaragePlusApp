@@ -97,14 +97,15 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
               const SizedBox(height: 4),
               Wrap(
                 spacing: 6,
-                children: jasa.kategoriSparepart
-                    .map((k) => Chip(
-                          label: Text(k.kategoriNama,
-                              style: const TextStyle(fontSize: 11)),
-                          backgroundColor: Colors.blue.shade50,
-                          visualDensity: VisualDensity.compact,
-                        ))
-                    .toList(),
+                children: [
+                  if (jasa.kategoriSparepart != null)
+                    Chip(
+                      label: Text(jasa.kategoriSparepart!,
+                          style: const TextStyle(fontSize: 11)),
+                      backgroundColor: Colors.blue.shade50,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
               ),
             ],
           ),
@@ -172,7 +173,7 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 13)),
                             subtitle: Text(
-                              'Rp ${_formatRupiah(sp.hargaJual)} • Stok: ${sp.stok} • ${sp.kategoriNama ?? ""}',
+                              'Rp ${_formatRupiah(sp.hargaJual)}${sp.spesifikasi != null ? ' • ${sp.spesifikasi}' : ''} • ${sp.kategori}',
                               style: TextStyle(
                                   color: Colors.grey[500], fontSize: 11),
                             ),

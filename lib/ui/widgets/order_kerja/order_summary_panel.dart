@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../app_colors.dart';
 import '../../../models/customer_models.dart';
 import '../../../viewModel/order_kerja_viewmodel.dart';
+import '../../../models/order_service_models.dart';
+import '../../../models/service_details_models.dart';
+import '../../../services/work_order_filler.dart';
+import 'order_kerja_preview_dialog.dart';
 
 class OrderSummaryPanel extends StatelessWidget {
   final OrderKerjaViewModel vm;
@@ -133,44 +137,7 @@ class OrderSummaryPanel extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: keranjang.isEmpty
                           ? null
-                          : () async {
-                              // Validasi kilometer
-                              if (vm.kilometer <= 0) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        '⚠️ Masukkan kilometer kendaraan terlebih dahulu'),
-                                    backgroundColor: Colors.orange,
-                                  ),
-                                );
-                                return;
-                              }
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Menyimpan pesanan...')),
-                              );
-                              bool sukses = await vm.simpanOrderKerja(
-                                customerId: customer.nomorRangka,
-                                catatanKeluhan: keluhanController.text,
-                              );
-                              if (sukses) {
-                                keluhanController.clear();
-                                kilometerController.clear();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('✅ Order berhasil disimpan!'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('❌ Gagal menyimpan order.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
+                          : () => _handlePreviewAndSave(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue[600],
                         disabledBackgroundColor: Colors.white12,
@@ -191,5 +158,103 @@ class OrderSummaryPanel extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _handlePreviewAndSave(BuildContext context) async {
+    if (vm.kilometer <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Masukkan kilometer kendaraan terlebih dahulu'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Mempersiapkan preview...')),
+    );
+
+    final now = DateTime.now();
+
+    final orderSummary = OrderServiceSummary(
+      nomorWo: 0,
+      customerId: customer.nomorRangka,
+      totalTagihan: vm.totalEstimasi,
+      status: 'Menunggu',
+      kilometer: vm.kilometer == 0
+          ? (int.tryParse(kilometerController.text.replaceAll('.', '')) ?? 0)
+          : vm.kilometer,
+      catatanKeluhan: keluhanController.text,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    final details = vm.keranjangJasa.map((jasa) {
+      final sp = vm.sparepartPerPekerjaan[jasa.id] ?? [];
+      final totalSp = sp.fold<int>(0, (s, e) => s + e.subtotal);
+      return OrderServiceDetail(
+        id: '',
+        nomorWo: 0,
+        orderKerjaId: jasa.id,
+        hargaFinal: jasa.estimasiHarga + totalSp,
+        status: StatusItem.menunggu,
+        createdAt: now,
+        namaPekerjaan: jasa.nama,
+        kodePekerjaan: jasa.kode,
+      );
+    }).toList();
+
+    try {
+      final pdfBytes = await WorkOrderFiller.fill(
+        order: orderSummary,
+        details: details,
+        namaPemilik: customer.namaPemilik,
+        nomorPolisi: customer.nomorPolisi,
+        telepon: customer.noTelepon ?? '',
+        alamat: customer.alamatLengkap,
+        merkMobil: customer.jenisMobil,
+        typeMobil: customer.tipeMobil,
+        tahun: customer.tahun.toString(),
+        noRangka: customer.nomorRangka,
+        noMesin: customer.nomorMesin,
+      );
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => OrderKerjaPreviewDialog(
+          pdfBytes: pdfBytes,
+          onConfirm: () async {
+            return await vm.simpanOrderKerja(
+              customerId: customer.nomorRangka,
+              catatanKeluhan: keluhanController.text,
+            );
+          },
+        ),
+      );
+
+      if (result == true && context.mounted) {
+        keluhanController.clear();
+        kilometerController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Order berhasil disimpan!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal membuat PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

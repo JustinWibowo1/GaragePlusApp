@@ -10,11 +10,18 @@ class SparepartViewModel extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
-  /// Muat sparepart berdasarkan satu kategori
-  Future<void> muatByKategori(String kategoriId) async {
+  Future<void> muatByKategori(
+    String kategori, {
+    String? tipeMesin,
+    String? tipeTransmisi,
+  }) async {
     _setLoading(true);
     try {
-      daftarSparepart = await _service.fetchByKategori(kategoriId);
+      daftarSparepart = await _service.fetchCocokUntukPekerjaan(
+        kategori: kategori,
+        tipeMesin: tipeMesin,
+        tipeTransmisi: tipeTransmisi,
+      );
       daftarSparepartAsli = daftarSparepart;
       errorMessage = null;
     } catch (e) {
@@ -23,11 +30,11 @@ class SparepartViewModel extends ChangeNotifier {
     _setLoading(false);
   }
 
-  /// Muat sparepart berdasarkan beberapa kategori
-  Future<void> muatByKategoriList(List<String> kategoriIds) async {
+  /// Muat semua sparepart aktif
+  Future<void> muatSemua() async {
     _setLoading(true);
     try {
-      daftarSparepart = await _service.fetchByKategoriList(kategoriIds);
+      daftarSparepart = await _service.fetchSemua();
       daftarSparepartAsli = daftarSparepart;
       errorMessage = null;
     } catch (e) {
@@ -44,8 +51,9 @@ class SparepartViewModel extends ChangeNotifier {
       daftarSparepart = daftarSparepartAsli.where((sp) {
         final nama = sp.nama.toLowerCase();
         final merk = (sp.merk ?? '').toLowerCase();
+        final spec = (sp.spesifikasi ?? '').toLowerCase();
         final kw = keyword.toLowerCase();
-        return nama.contains(kw) || merk.contains(kw);
+        return nama.contains(kw) || merk.contains(kw) || spec.contains(kw);
       }).toList();
     }
     notifyListeners();

@@ -37,4 +37,18 @@ class CarService {
         .update(data)
         .eq('nomor_rangka', originalRangka);
   }
+
+  Future<int> fetchOdometer(String rangka) async {
+    try {
+      final response = await _supabase
+          .from('customer')
+          .select('odometer_terakhir')
+          .eq('nomor_rangka', rangka)
+          .maybeSingle();
+      
+      return response?['odometer_terakhir'] as int? ?? 0;
+    } catch (e) {
+      return 0;
+    }
+  }
 }

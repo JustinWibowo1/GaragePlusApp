@@ -35,7 +35,7 @@ class _ServiceCardItemState extends State<ServiceCardItem> {
     bool isActive = isHovered || widget.isSelected;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: widget.isSelected
             ? Colors.blue.shade50.withOpacity(0.5)
@@ -80,14 +80,14 @@ class _ServiceCardItemState extends State<ServiceCardItem> {
                           ? Icons.check
                           : (isHovered ? Icons.add : Icons.build),
                       color: isActive ? Colors.white : Colors.blue[800],
-                      size: 20,
+                      size: 18,
                     ),
                   ),
                 ),
               ),
               Text('Rp ${_formatRupiah(widget.jasa.estimasiHarga)}',
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.grey)),
+                      fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13)),
             ],
           ),
           const Spacer(),
@@ -95,7 +95,7 @@ class _ServiceCardItemState extends State<ServiceCardItem> {
             widget.jasa.nama,
             style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 15,
+                fontSize: 14,
                 color: AppColors.navy),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -104,10 +104,10 @@ class _ServiceCardItemState extends State<ServiceCardItem> {
           Row(
             children: [
               Text(widget.jasa.kode,
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 11)),
               if (widget.jasa.requiresSparepart) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.inventory_2, size: 12, color: Colors.orange[400]),
+                const SizedBox(width: 6),
+                Icon(Icons.inventory_2, size: 11, color: Colors.orange[400]),
               ],
             ],
           ),

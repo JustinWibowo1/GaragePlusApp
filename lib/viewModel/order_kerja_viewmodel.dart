@@ -23,6 +23,22 @@ class OrderKerjaViewModel extends ChangeNotifier {
   List<OrderKerja> daftarKerjaTampil = [];
   List<OrderKerja> keranjangJasa = [];
 
+  String _keywordPencarian = '';
+  String _kategoriTerpilih = 'Semua';
+
+  String get kategoriTerpilih => _kategoriTerpilih;
+
+  /// Daftar kategori diambil dinamis dari pekerjaan yang tersedia
+  List<String> get daftarKategori {
+    final Set<String> categories = {'Semua'};
+    for (var jasa in daftarKerjaAsli) {
+      if (jasa.kategoriPerbaikan != null && jasa.kategoriPerbaikan!.isNotEmpty) {
+        categories.add(jasa.kategoriPerbaikan!);
+      }
+    }
+    return categories.toList()..sort((a, b) => a == 'Semua' ? -1 : (b == 'Semua' ? 1 : a.compareTo(b)));
+  }
+
   /// Sparepart yang dipilih per pekerjaan (key = orderKerja.id)
   Map<String, List<SparepartEntry>> sparepartPerPekerjaan = {};
 
@@ -32,6 +48,14 @@ class OrderKerjaViewModel extends ChangeNotifier {
 
   bool isLoading = false;
   String? errorMessage;
+
+  /// Tipe kendaraan pelanggan — diisi saat muatKerjaUntukMobil dipanggil
+  /// agar dapat dipakai sebagai filter saat memilih sparepart.
+  String _tipeMesin = '';
+  String _tipeTransmisi = '';
+
+  String get tipeMesin => _tipeMesin;
+  String get tipeTransmisi => _tipeTransmisi;
 
   // ── Kilometer ─────────────────────────────────
   int _kilometer = 0;
@@ -43,6 +67,7 @@ class OrderKerjaViewModel extends ChangeNotifier {
   }
 
   // ── Load pekerjaan ────────────────────────────
+
 
   Future<void> loadKerja() async {
     _setLoading(true);
@@ -59,6 +84,8 @@ class OrderKerjaViewModel extends ChangeNotifier {
     required String mesin,
     required String transmisi,
   }) async {
+    _tipeMesin = mesin;
+    _tipeTransmisi = transmisi;
     _setLoading(true);
     try {
       daftarKerja = await _orderKerjaServices.fetchKerjaSesuaiMobil(
@@ -76,17 +103,24 @@ class OrderKerjaViewModel extends ChangeNotifier {
 
   // ── Sparepart loading ─────────────────────────
 
-  /// Muat sparepart yang tersedia berdasarkan kategori dari pekerjaan
+  /// Muat sparepart yang tersedia berdasarkan kategori teks pekerjaan,
+  /// difilter otomatis sesuai tipe mesin & transmisi kendaraan.
   Future<void> muatSparepartUntukPekerjaan(OrderKerja jasa) async {
+    // Jika pekerjaan tidak butuh sparepart, skip
+    if (!jasa.requiresSparepart) {
+      daftarSparepart = [];
+      return;
+    }
+
     isLoadingSparepart = true;
     notifyListeners();
 
     try {
-      final kategoriIds =
-          jasa.kategoriSparepart.map((k) => k.kategoriId).toList();
-
-      daftarSparepart =
-          await _sparepartServices.fetchByKategoriList(kategoriIds);
+      daftarSparepart = await _sparepartServices.fetchCocokUntukPekerjaan(
+        kategori: jasa.kategoriSparepart!,
+        tipeMesin: _tipeMesin.isNotEmpty ? _tipeMesin : null,
+        tipeTransmisi: _tipeTransmisi.isNotEmpty ? _tipeTransmisi : null,
+      );
     } catch (e) {
       daftarSparepart = [];
     }
@@ -95,16 +129,29 @@ class OrderKerjaViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+
   // ── Keranjang management ──────────────────────
 
   void cariPekerjaan(String keyword) {
-    if (keyword.isEmpty) {
-      daftarKerjaTampil = daftarKerjaAsli;
-    } else {
-      daftarKerjaTampil = daftarKerjaAsli.where((jasa) {
-        return jasa.nama.toLowerCase().contains(keyword.toLowerCase());
-      }).toList();
-    }
+    _keywordPencarian = keyword;
+    _terapkanFilter();
+  }
+
+  void setKategori(String kategori) {
+    _kategoriTerpilih = kategori;
+    _terapkanFilter();
+  }
+
+  void _terapkanFilter() {
+    daftarKerjaTampil = daftarKerjaAsli.where((jasa) {
+      final matchKeyword = _keywordPencarian.isEmpty ||
+          jasa.nama.toLowerCase().contains(_keywordPencarian.toLowerCase());
+      
+      final matchKategori = _kategoriTerpilih == 'Semua' ||
+          jasa.kategoriPerbaikan == _kategoriTerpilih;
+
+      return matchKeyword && matchKategori;
+    }).toList();
     notifyListeners();
   }
 

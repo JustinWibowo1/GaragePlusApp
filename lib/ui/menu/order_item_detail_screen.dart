@@ -10,6 +10,7 @@ import '../../app_colors.dart';
 import '../widgets/vehicle_passport_card.dart';
 import '../widgets/task_ledger_table.dart';
 import '../dialogs/work_order_dialogs.dart';
+import '../widgets/order_kerja/tambah_pekerjaan_sheet.dart';
 
 class OrderItemDetailScreen extends StatefulWidget {
   final OrderDetailViewModel vm;
@@ -47,28 +48,33 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
     return '${NumberFormat('#,###').format(widget.vm.kmTerakhir)} km';
   }
 
-  Future<void> _handleCetakWO() async {
-    final formResult = await WorkOrderDialogs.showCetakWorkOrderDialog(context);
-    
-    if (formResult == null || !context.mounted) return;
+  Future<void> _handleCetakWO({bool isFinalisasi = false}) async {
+    final order = widget.vm.daftarOrder.firstWhere(
+      (o) => o.nomorWo == widget.nomorWo,
+    );
+
+    Map<String, String> formResult = {};
+
+    // Sesuai request: Print PDF biasa tidak memunculkan dialog data pemeriksaan.
+    // Dialog HANYA muncul saat menekan tombol "Finalisasi & Cetak WO".
+    if (isFinalisasi) {
+      final res = await WorkOrderDialogs.showCetakWorkOrderDialog(context);
+      if (res == null || !context.mounted) return;
+      formResult = res;
+    }
 
     setState(() => _isCetakLoading = true);
 
     try {
-      final order = widget.vm.daftarOrder.firstWhere(
-        (o) => o.nomorWo == widget.nomorWo,
-      );
-      
-      // Jika order belum selesai, finalisasi sekarang
-      if (order.status != 'Selesai') {
-        bool success = await widget.vm.finalisasiOrder(widget.nomorWo);
-        if (!success) throw Exception('Gagal memfinalisasi order ke Riwayat');
-      }
-
       final details = widget.vm.daftarDetail;
 
+      // Jika order sudah selesai, gunakan data history (sudah ada completedAt).
+      // Jika belum selesai, biarkan completedAt null agar kosong di PDF saat dipreview/dicetak.
+      final orderPreview = order;
+
+      // 1. Generate PDF dulu — TANPA mengubah DB
       final pdfBytes = await WorkOrderFiller.fill(
-        order: order,
+        order: orderPreview,
         details: details,
         namaPemilik: widget.customer.namaPemilik,
         nomorPolisi: widget.customer.nomorPolisi,
@@ -97,10 +103,34 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
       );
 
       if (!context.mounted) return;
-      // Close Order Item Detail screen to go back to list
-      Navigator.pop(context);
-      
-      PdfPrinterService.showPreview(context, pdfBytes);
+
+      // 2. Tampilkan preview — user bisa cek sebelum konfirmasi
+      final dikonfirmasi = await PdfPrinterService.showPreviewWithConfirm(
+        context,
+        pdfBytes,
+        sudahSelesai: order.status == 'Selesai',
+      );
+
+      if (!context.mounted) return;
+
+      // 3. Hanya finalisasi jika user menekan "Konfirmasi & Simpan"
+      if (dikonfirmasi == true && order.status != 'Selesai') {
+        final success = await widget.vm.finalisasiOrder(
+          widget.nomorWo,
+          completedAt: DateTime.now(), // Waktu keluar dicatat HANYA jika dikonfirmasi
+        );
+        if (!success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Gagal menyimpan status Selesai'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        // Kembali ke halaman sebelumnya setelah dikonfirmasi
+        if (context.mounted) Navigator.pop(context);
+      }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -135,8 +165,6 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
 
           final isCompleted =
               widget.vm.progress == 1.0 && widget.vm.totalItem > 0;
-              
-          // Mengecek apakah status order adalah "Selesai" (History / Read-Only)
           final bool isHistory = () {
             try {
               final order = widget.vm.daftarOrder.firstWhere(
@@ -147,14 +175,15 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
               return false;
             }
           }();
-          
-          final isSemuaItemSelesai = widget.vm.totalItem > 0 && 
-              widget.vm.daftarDetail.every((d) => d.status == StatusItem.selesai);
+          final isSemuaItemSelesai = widget.vm.totalItem > 0 &&
+              widget.vm.daftarDetail
+                  .every((d) => d.status == StatusItem.selesai);
 
           return Stack(
             children: [
               SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -204,9 +233,11 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: AppColors.greyCompleted.withOpacity(0.1),
+                                        color: AppColors.greyCompleted
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: AppColors.greyCompleted),
+                                        border: Border.all(
+                                            color: AppColors.greyCompleted),
                                       ),
                                       child: const Text(
                                         'READ-ONLY (HISTORY)',
@@ -272,8 +303,8 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                                   ? const SizedBox(
                                       width: 16,
                                       height: 16,
-                                      child:
-                                          CircularProgressIndicator(strokeWidth: 2))
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2))
                                   : const Icon(Icons.print, size: 16),
                               label: const Text('Print PDF'),
                               style: OutlinedButton.styleFrom(
@@ -287,7 +318,7 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                               onPressed: (widget.vm.daftarDetail.isEmpty ||
                                       _isCetakLoading)
                                   ? null
-                                  : _handleCetakWO,
+                                  : () => _handleCetakWO(isFinalisasi: false),
                             ),
                           ],
                         ),
@@ -332,8 +363,23 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () {
-                              // Tampilkan dialog tambah pekerjaan khusus order ini
+                            onPressed: () async {
+                              final hasil = await TambahPekerjaanSheet.show(context);
+                              if (hasil == null || !context.mounted) return;
+                              final sukses = await widget.vm.tambahPekerjaanBaru(
+                                nomorWo      : widget.nomorWo,
+                                orderKerjaId : hasil['id'] as String,
+                                namaPekerjaan: hasil['nama'] as String,
+                                kodePekerjaan: hasil['kode'] as String,
+                                hargaFinal   : hasil['hargaFinal'] as int,
+                              );
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(sukses
+                                    ? '✅ "${hasil['nama']}" berhasil ditambahkan'
+                                    : '⚠️ Gagal menambahkan pekerjaan'),
+                                backgroundColor: sukses ? AppColors.green : AppColors.urgentBg,
+                              ));
                             },
                           ),
                       ],
@@ -344,7 +390,8 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                       daftarDetail: widget.vm.daftarDetail,
                       isHistory: isHistory,
                     ),
-                    const SizedBox(height: 100), // Ruang ekstra untuk tombol finalisasi
+                    const SizedBox(
+                        height: 100), // Ruang ekstra untuk tombol finalisasi
                   ],
                 ),
               ),
@@ -374,21 +421,25 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      onPressed: _isCetakLoading ? null : _handleCetakWO,
+                      onPressed: _isCetakLoading ? null : () => _handleCetakWO(isFinalisasi: true),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           if (_isCetakLoading)
                             const SizedBox(
-                              width: 24, height: 24, 
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
-                            )
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 3))
                           else
                             const Icon(Icons.check_circle_outline, size: 28),
                           const SizedBox(width: 12),
                           const Text(
                             'FINALISASI & CETAK WO',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.5),
                           ),
                         ],
                       ),

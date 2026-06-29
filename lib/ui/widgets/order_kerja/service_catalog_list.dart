@@ -56,45 +56,87 @@ class ServiceCatalogList extends StatelessWidget {
                       style:
                           const TextStyle(color: Colors.red)));
             }
-            if (vm.daftarKerjaTampil.isEmpty) {
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16)),
-                child: const Center(
-                    child: Text('Pekerjaan tidak ditemukan.')),
-              );
-            }
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 2.5,
-              ),
-              itemCount:
-                  vm.daftarKerjaTampil.length,
-              itemBuilder: (context, index) {
-                final jasa = vm.daftarKerjaTampil[index];
-                final isSelected =
-                    vm.keranjangJasa.contains(jasa);
-                final sparepartTerpilih =
-                    vm.sparepartPerPekerjaan[jasa.id] ?? [];
+            
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Filter Kategori ──
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: vm.daftarKategori.map((kategori) {
+                      final isSelected = vm.kategoriTerpilih == kategori;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Text(kategori == 'Semua' ? 'Semua Kategori' : kategori),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            if (selected) {
+                              vm.setKategori(kategori);
+                            }
+                          },
+                          selectedColor: AppColors.navy,
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : AppColors.navy,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: isSelected ? AppColors.navy : Colors.grey.shade300,
+                            )
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-                return ServiceCardItem(
-                  jasa: jasa,
-                  isSelected: isSelected,
-                  selectedSpareparts: sparepartTerpilih,
-                  onTap: () {
-                    onServiceSelected(context, jasa, sparepartTerpilih);
-                  },
-                );
-              },
+                // ── Daftar Jasa ──
+                if (vm.daftarKerjaTampil.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16)),
+                    child: const Center(
+                        child: Text('Pekerjaan tidak ditemukan.')),
+                  )
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 2.0,
+                    ),
+                    itemCount:
+                        vm.daftarKerjaTampil.length,
+                    itemBuilder: (context, index) {
+                      final jasa = vm.daftarKerjaTampil[index];
+                      final isSelected =
+                          vm.keranjangJasa.contains(jasa);
+                      final sparepartTerpilih =
+                          vm.sparepartPerPekerjaan[jasa.id] ?? [];
+
+                      return ServiceCardItem(
+                        jasa: jasa,
+                        isSelected: isSelected,
+                        selectedSpareparts: sparepartTerpilih,
+                        onTap: () {
+                          onServiceSelected(context, jasa, sparepartTerpilih);
+                        },
+                      );
+                    },
+                  ),
+              ],
             );
           },
         ),

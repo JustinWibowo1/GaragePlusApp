@@ -84,91 +84,111 @@ class WorkOrderFiller {
         '${order.kilometer.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')} km';
 
     // Hanya pekerjaan yang sudah diselesaikan mekanik
-    final selesaiDetails = details
-        .where((d) => d.status == StatusItem.selesai)
-        .toList();
+    final selesaiDetails =
+        details.where((d) => d.status == StatusItem.selesai).toList();
 
     final pekerjaanText = details.isEmpty
-        ? '-'
-        : details.asMap().entries.map((e) => '${e.key + 1}. ${e.value.namaPekerjaan ?? '-'}').join('\n');
+        ? ''
+        : details
+            .asMap()
+            .entries
+            .map((e) => '${e.key + 1}. ${e.value.namaPekerjaan ?? ''}')
+            .join('\n');
 
     final pekerjaanTextDenganCatatan = selesaiDetails.isEmpty
-        ? '-'
+        ? ''
         : selesaiDetails.asMap().entries.map((e) {
-            final cat = e.value.catatanTeknisi?.trim() ?? '-';
+            final cat = e.value.catatanTeknisi?.trim() ?? '';
             return '${e.key + 1}. $cat';
           }).join('\n');
 
-    // Ringkasan oli & cairan dalam satu baris
+    // Menggabungkan oli & cairan
+    // oliMatik 'X' berarti tidak ada/tidak berlaku, jangan dicetak
     // final oliText = [
-    //   'Oli Mesin: $oliMesin',
-    //   'Matik: $oliMatik',
-    //   'Coolant: $coolant',
-    //   'Rem/Kopling: $oliRemKopling',
-    // ].join('  |  ');
+    //   if (oliMesin.isNotEmpty) 'Oli: $oliMesin',
+    //   if (oliMatik.isNotEmpty && oliMatik != 'X') 'Matik: $oliMatik',
+    //   if (coolant.isNotEmpty) 'Coolant: $coolant',
+    //   if (oliRemKopling.isNotEmpty) 'Rem/Kopl: $oliRemKopling',
+    // ].join(' | ');el
 
-    // Kolom terakhir: gabungkan sisa data pemeriksaan
-    // final lastField = [
-    //   if (torsiMur.isNotEmpty) 'Torsi: $torsiMur kg-m',
-    //   if (serviceKm.isNotEmpty || serviceBulan.isNotEmpty)
-    //     'Service berikut: $serviceKm km / $serviceBulan bln',
-    //   if (catatanTambahan.isNotEmpty) catatanTambahan,
-    // ].join('  |  ');
+    // Menggabungkan info torsi & service berikut
+    final lastField = [
+      if (torsiMur.isNotEmpty) 'Torsi: $torsiMur kg-m',
+      if (serviceKm.isNotEmpty || serviceBulan.isNotEmpty)
+        'Service berikut: $serviceKm km / $serviceBulan bln',
+    ].join(' | ');
 
-    // ── 4. Mapping index → nilai (sesuai urutan field di PDF) ─────────
+    // Gabungkan batteryStatus ke dalam string batteryAwal
+    // final batteryAwalFull = [
+    //   if (batteryAwal.isNotEmpty) batteryAwal,
+    //   if (batteryStatus.isNotEmpty && batteryStatus != 'Normal') '($batteryStatus)',
+    // ].join(' ');
+    // final batteryAwalDisplay = batteryAwalFull.isEmpty
+    //     ? (batteryStatus != 'Normal' ? batteryStatus : '')
+    //     : batteryAwalFull;
+
+    // ── 4. Mapping index → nilai sesuai daftar nama field PDF ─────────
     final Map<int, String> indexToValue = {
-      16: order.nomorWoDisplay, 
-      5: namaPemilik,
-      13: telepon, 
-      6: alamat, 
-      7: merkMobil, 
-      10: typeMobil, 
-      14: tahun, 
-      17: nomorPolisi, 
-      8: noRangka, 
-      11: noMesin,
-      19: km, 
-      9: _tgl(order.createdAt),
-      12: _jam(order.createdAt),
-      15: order.completedAt != null 
-          ? _tgl(order.completedAt!)
-          : '',
-      18: order.completedAt != null
-          ? _jam(order.completedAt!)
-          : '',
-      2: order.catatanKeluhan,
-      3: pekerjaanText, 
-      4: pekerjaanTextDenganCatatan,
-
-      20: batteryAwal, 
-      21: batteryStater, 
-      22: batteryPengisian,
-      23: tekananDepan, 
-      24: tekananBelakang, 
-      25: tekananCadangan,
+      // 0: oliText,                        // TextFormField 5 (Oli & cairan)
+      1: lastField,                      // TextFormField 6 (Info tambahan)
+      2: order.catatanKeluhan,           // KeluhanPemilik
+      3: pekerjaanText,                  // OrderKerja
+      4: pekerjaanTextDenganCatatan,     // PekerjaanYangDilakukan
+      5: namaPemilik,                    // NamaPemilik
+      6: alamat,                         // Alamat
+      7: merkMobil,                      // MerkMobil
+      8: noRangka,                       // NomorRangka
+      9: _tgl(order.createdAt),          // TanggalMasuk
+      10: typeMobil,                     // TipeMobil
+      11: noMesin,                       // NomorMesin
+      12: _jam(order.createdAt),         // JamMasuk
+      13: telepon,                       // NomorTelepon
+      14: tahun,                         // TahunMobil
+      15: order.completedAt != null ? _tgl(order.completedAt!) : '', // TanggalSelesai
+      16: order.nomorWoDisplay,          // NomorWO
+      17: nomorPolisi,                   // NomorPolisi
+      18: order.completedAt != null ? _jam(order.completedAt!) : '', // TextFormField 26 (JamSelesai)
+      19: km,                            // KilometerMobil
+      // 20: batteryAwalDisplay,             // BatteryAwal (+ status jika tidak Normal)
+      // 21: batteryStater,                 // BatteryStarter
+      // 22: batteryPengisian,              // BatteryPengisian
+      // 23: tekananDepan,                  // TekananDepan
+      // 24: tekananBelakang,               // TekananBelakang
+      // 25: tekananCadangan,               // TekananCadangan
+      // 26: catatanTambahan,               // CatatanTambahan
     };
 
+    // Step 1: Isi semua field teks dengan nilai yang sesuai
+    final font = PdfStandardFont(PdfFontFamily.helvetica, 9);
     for (int i = 0; i < form.fields.count; i++) {
       final val = indexToValue[i] ?? '';
-      if (val.isNotEmpty) {
-        _setFieldValue(form.fields[i], val);
-      }
-    }
-
-    for (int i = 0; i < form.fields.count; i++) {
       final field = form.fields[i];
+
+      if (val.isNotEmpty) {
+        if (field is PdfTextBoxField) {
+          field.font = font;
+          field.text = val;
+        } else {
+          _setFieldValue(field, val);
+        }
+      }
+      
+      // Hilangkan kotak hitam dengan membuat field transparan
       if (field is PdfTextBoxField) {
         field.borderColor = PdfColor(255, 255, 255, 0);
-        field.backColor = PdfColor(255, 255, 255, 0); // transparan
+        field.backColor = PdfColor(255, 255, 255, 0);
       }
     }
 
-    // ── 6. Flatten & save ─────────────────────────────────────────────
+    // Step 2: Flatten — ratakan semua form field menjadi teks statis
+    // Terbukti bekerja pada template work_order-2.pdf (lihat debugFillFieldNames)
     form.flattenAllFields();
+
     final List<int> saved = await document.save();
     document.dispose();
     return Uint8List.fromList(saved);
   }
+
 
   static void _setFieldValue(PdfField field, String value) {
     if (field is PdfTextBoxField) {

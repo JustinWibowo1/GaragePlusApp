@@ -15,7 +15,7 @@ class CarViewModel extends ChangeNotifier {
   List<Customer> get cars => _cars;
 
   static const List<String> mesinOpts     = ['Bensin', 'Diesel', 'Hybrid'];
-  static const List<String> transmisiOpts = ['Manual', 'Matic', 'CVT'];
+  static const List<String> transmisiOpts = ['Manual', 'Matic', 'CVT', 'CVT Hybrid'];
   static const List<String> sapaanOpts    = ['Bapak', 'Ibu'];
 
   Future<bool> submitAddCar(Map<String, dynamic> data) async {

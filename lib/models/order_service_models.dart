@@ -24,28 +24,34 @@ class OrderServiceSummary {
   });
 
   /// Display-friendly WO number
-  String get nomorWoDisplay => 'WO-${createdAt.year}-${nomorWo.toString().padLeft(4, '0')}';
+  String get nomorWoDisplay =>
+      'WO-${createdAt.year}-${nomorWo.toString().padLeft(4, '0')}';
 
   factory OrderServiceSummary.fromJson(Map<String, dynamic> json) {
     return OrderServiceSummary(
-      nomorWo        : json['nomor_wo'] as int,
-      customerId     : json['customer_id'] as String? ?? '',
-      totalTagihan   : json['total_tagihan'] as int? ?? 0,
-      status         : json['status'] as String? ?? 'Menunggu',
-      kilometer      : json['odometer_terakhir'] as int? ?? 0,
-      catatanKeluhan : json['catatan_keluhan'] as String? ?? '',
-      createdAt      : DateTime.parse(json['created_at'] as String),
-      updatedAt      : DateTime.parse(json['updated_at'] as String),
-      completedAt    : json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'] as String)
+      nomorWo: json['nomor_wo'] as int,
+      customerId: json['customer_id'] as String? ?? '',
+      totalTagihan: json['total_tagihan'] as int? ?? 0,
+      status: json['status'] as String? ?? 'Menunggu',
+      kilometer: json['kilometer'] as int? ?? 0,
+      catatanKeluhan: json['catatan_keluhan'] as String? ?? '',
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+      // Tidak ada kolom completed_at di SQL → gunakan updated_at jika status Selesai
+      completedAt: (json['status'] as String? ?? '') == 'Selesai'
+          ? DateTime.parse(json['updated_at'] as String)
           : null,
-      deletedAt      : json['deleted_at'] != null
+      deletedAt: json['deleted_at'] != null
           ? DateTime.parse(json['deleted_at'] as String)
           : null,
     );
   }
 
-  OrderServiceSummary copyWith({String? status, DateTime? completedAt}) {
+  OrderServiceSummary copyWith({
+    String? status,
+    DateTime? completedAt,
+    DateTime? updatedAt,
+  }) {
     return OrderServiceSummary(
       nomorWo        : nomorWo,
       customerId     : customerId,
@@ -54,7 +60,7 @@ class OrderServiceSummary {
       kilometer      : kilometer,
       catatanKeluhan : catatanKeluhan,
       createdAt      : createdAt,
-      updatedAt      : updatedAt,
+      updatedAt      : updatedAt ?? this.updatedAt,
       completedAt    : completedAt ?? this.completedAt,
       deletedAt      : deletedAt,
     );
