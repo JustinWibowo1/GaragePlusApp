@@ -103,8 +103,9 @@ class _ServiceCardItemState extends State<ServiceCardItem> {
           const SizedBox(height: 4),
           Row(
             children: [
-              Text(widget.jasa.kode,
-                  style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+              if (widget.jasa.kategoriPerbaikan != null)
+                Text(widget.jasa.kategoriPerbaikan!,
+                    style: TextStyle(color: Colors.grey[500], fontSize: 11)),
               if (widget.jasa.requiresSparepart) ...[
                 const SizedBox(width: 6),
                 Icon(Icons.inventory_2, size: 11, color: Colors.orange[400]),

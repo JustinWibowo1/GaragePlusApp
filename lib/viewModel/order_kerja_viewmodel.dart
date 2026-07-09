@@ -42,6 +42,9 @@ class OrderKerjaViewModel extends ChangeNotifier {
   /// Sparepart yang dipilih per pekerjaan (key = orderKerja.id)
   Map<String, List<SparepartEntry>> sparepartPerPekerjaan = {};
 
+  /// Harga jasa kustom (override) per pekerjaan (key = orderKerja.id)
+  Map<String, int> hargaJasaCustom = {};
+
   /// Sparepart yang tersedia untuk dialog pilih
   List<Sparepart> daftarSparepart = [];
   bool isLoadingSparepart = false;
@@ -73,6 +76,8 @@ class OrderKerjaViewModel extends ChangeNotifier {
     _setLoading(true);
     try {
       daftarKerja = await _orderKerjaServices.fetchSemuaKerja();
+      daftarKerjaAsli = daftarKerja;
+      daftarKerjaTampil = daftarKerja;
       errorMessage = null;
     } catch (e) {
       errorMessage = 'Gagal memuat daftar menu: $e';
@@ -158,6 +163,7 @@ class OrderKerjaViewModel extends ChangeNotifier {
   void toggleKeranjang(OrderKerja jasa) {
     if (keranjangJasa.contains(jasa)) {
       keranjangJasa.remove(jasa);
+      hargaJasaCustom.remove(jasa.id);
     } else {
       keranjangJasa.add(jasa);
     }
@@ -183,6 +189,12 @@ class OrderKerjaViewModel extends ChangeNotifier {
   void hapusDariKeranjang(OrderKerja jasa) {
     keranjangJasa.remove(jasa);
     sparepartPerPekerjaan.remove(jasa.id);
+    hargaJasaCustom.remove(jasa.id);
+    notifyListeners();
+  }
+
+  void setHargaJasaCustom(OrderKerja jasa, int harga) {
+    hargaJasaCustom[jasa.id] = harga;
     notifyListeners();
   }
 
@@ -191,7 +203,7 @@ class OrderKerjaViewModel extends ChangeNotifier {
   int get totalEstimasi {
     int total = 0;
     for (final jasa in keranjangJasa) {
-      total += jasa.estimasiHarga;
+      total += hargaJasaCustom[jasa.id] ?? jasa.estimasiHarga;
       final spareparts = sparepartPerPekerjaan[jasa.id] ?? [];
       for (final sp in spareparts) {
         total += sp.subtotal;
@@ -236,7 +248,7 @@ class OrderKerjaViewModel extends ChangeNotifier {
             .insert({
               'nomor_wo': nomorWo,
               'order_kerja_id': jasa.id,
-              'harga_final': jasa.estimasiHarga + totalSparepart,
+              'harga_final': (hargaJasaCustom[jasa.id] ?? jasa.estimasiHarga) + totalSparepart,
             })
             .select('id')
             .single();
@@ -274,5 +286,19 @@ class OrderKerjaViewModel extends ChangeNotifier {
   void _setLoading(bool value) {
     isLoading = value;
     notifyListeners();
+  }
+
+  /// Insert pekerjaan custom baru (tidak ada di katalog) langsung ke DB,
+  /// lalu tambahkan ke keranjang tanpa mengotori katalog (is_active = false).
+  Future<OrderKerja?> tambahPekerjaanCustom({
+    required String nama,
+    required int harga,
+  }) async {
+    final result = await _orderKerjaServices.insertPekerjaanCustom(nama, harga: harga);
+    if (result != null) {
+      keranjangJasa.add(result);
+      notifyListeners();
+    }
+    return result;
   }
 }

@@ -67,12 +67,7 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
 
     try {
       final details = widget.vm.daftarDetail;
-
-      // Jika order sudah selesai, gunakan data history (sudah ada completedAt).
-      // Jika belum selesai, biarkan completedAt null agar kosong di PDF saat dipreview/dicetak.
       final orderPreview = order;
-
-      // 1. Generate PDF dulu — TANPA mengubah DB
       final pdfBytes = await WorkOrderFiller.fill(
         order: orderPreview,
         details: details,
@@ -280,25 +275,6 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                         Row(
                           children: [
                             OutlinedButton.icon(
-                              icon: const Icon(Icons.bug_report, size: 16),
-                              label: const Text('Debug PDF'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red,
-                                side: const BorderSide(color: Colors.redAccent),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                              ),
-                              onPressed: () async {
-                                final bytes =
-                                    await WorkOrderFiller.debugFillFieldNames();
-                                if (!context.mounted) return;
-                                PdfPrinterService.showPreview(context, bytes);
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            OutlinedButton.icon(
                               icon: _isCetakLoading
                                   ? const SizedBox(
                                       width: 16,
@@ -370,7 +346,6 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                                 nomorWo      : widget.nomorWo,
                                 orderKerjaId : hasil['id'] as String,
                                 namaPekerjaan: hasil['nama'] as String,
-                                kodePekerjaan: hasil['kode'] as String,
                                 hargaFinal   : hasil['hargaFinal'] as int,
                               );
                               if (!context.mounted) return;

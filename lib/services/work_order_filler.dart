@@ -20,12 +20,37 @@ class WorkOrderFiller {
     'Desember',
   ];
 
-  static String _tgl(DateTime d) => '${d.day} ${_bulan[d.month]} ${d.year}';
-  static String _jam(DateTime d) =>
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  static String _tgl(DateTime d) {
+    final local = d.toLocal();
+    return '${local.day} ${_bulan[local.month]} ${local.year}';
+  }
+
+  static String _jam(DateTime d) {
+    final local = d.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
 
   static Future<Uint8List> debugFillFieldNames() async {
     final ByteData data = await rootBundle.load('asset/work_order-2.pdf');
+    final PdfDocument document =
+        PdfDocument(inputBytes: data.buffer.asUint8List());
+    final PdfForm form = document.form;
+
+    for (int i = 0; i < form.fields.count; i++) {
+      final field = form.fields[i];
+      if (field is PdfTextBoxField) {
+        field.text = '[$i]${field.name}';
+      }
+    }
+
+    form.flattenAllFields();
+    final List<int> saved = await document.save();
+    document.dispose();
+    return Uint8List.fromList(saved);
+  }
+
+  static Future<Uint8List> debugEstimasiFieldNames() async {
+    final ByteData data = await rootBundle.load('asset/estimasi unt aplikasi.pdf-2.pdf');
     final PdfDocument document =
         PdfDocument(inputBytes: data.buffer.asUint8List());
     final PdfForm form = document.form;

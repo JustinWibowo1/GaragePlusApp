@@ -5,6 +5,7 @@ import '../../../viewModel/order_kerja_viewmodel.dart';
 import '../../../models/order_service_models.dart';
 import '../../../models/service_details_models.dart';
 import '../../../services/work_order_filler.dart';
+import '../../../models/order_kerja_models.dart';
 import 'order_kerja_preview_dialog.dart';
 
 class OrderSummaryPanel extends StatelessWidget {
@@ -26,6 +27,61 @@ class OrderSummaryPanel extends StatelessWidget {
           RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
+  }
+
+  void _tampilDialogEditHarga(BuildContext context, OrderKerja jasa) {
+    final TextEditingController hargaController = TextEditingController(
+      text: (vm.hargaJasaCustom[jasa.id] ?? jasa.estimasiHarga).toString(),
+    );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Harga: ${jasa.nama}'),
+          content: TextField(
+            controller: hargaController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Harga Jasa (Rp)',
+              prefixText: 'Rp ',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                String rawText = hargaController.text;
+                // Hanya sisakan angka, titik, dan koma
+                String cleanText = rawText.replaceAll(RegExp(r'[^0-9.,]'), '');
+                
+                // Jika pengguna memakai titik sebagai pemisah ribuan (format Indonesia misal: 1.500.000)
+                if (cleanText.contains('.') && cleanText.indexOf('.') != cleanText.lastIndexOf('.')) {
+                  cleanText = cleanText.replaceAll('.', '');
+                }
+                
+                // Jika formatnya 1.500 (satu titik dan bukan desimal 3 angka di belakang)
+                // Ini sedikit tricky, tapi kita ganti saja koma jadi titik untuk standard double parsing
+                if (cleanText.contains(',')) {
+                  cleanText = cleanText.replaceAll('.', ''); // hilangkan titik ribuan jika ada
+                  cleanText = cleanText.replaceAll(',', '.'); // jadikan koma sebagai desimal
+                }
+
+                final doublePrice = double.tryParse(cleanText);
+                if (doublePrice != null) {
+                  // Dibulatkan ke integer karena tipe datanya int di database
+                  vm.setHargaJasaCustom(jasa, doublePrice.round());
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -73,47 +129,87 @@ class OrderSummaryPanel extends StatelessWidget {
                   ...keranjang.map((jasa) {
                     final spareparts = vm.sparepartPerPekerjaan[jasa.id] ?? [];
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
                                   child: Text('• ${jasa.nama}',
                                       style: TextStyle(
                                           color: Colors.white.withOpacity(0.9),
-                                          fontSize: 14))),
-                              Text('Rp ${_formatRupiah(jasa.estimasiHarga)}',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13)),
-                            ],
-                          ),
-                          ...spareparts.map((sp) => Padding(
-                                padding:
-                                    const EdgeInsets.only(left: 16, top: 4),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                        '↳ ${sp.sparepart.displayName} x${sp.qty}',
-                                        style: TextStyle(
-                                            color:
-                                                Colors.white.withOpacity(0.6),
-                                            fontSize: 12)),
-                                    Text('Rp ${_formatRupiah(sp.subtotal)}',
-                                        style: TextStyle(
-                                            color:
-                                                Colors.white.withOpacity(0.7),
-                                            fontSize: 12)),
-                                  ],
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500)),
                                 ),
-                              )),
-                        ],
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () => _tampilDialogEditHarga(context, jasa),
+                                  child: Row(
+                                    children: [
+                                      Text('Rp ${_formatRupiah(vm.hargaJasaCustom[jasa.id] ?? jasa.estimasiHarga)}',
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13)),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.edit, size: 12, color: Colors.blueAccent),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // ── Tombol Hapus ──
+                                SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    iconSize: 14,
+                                    hoverColor: Colors.red.withOpacity(0.35),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.red.withOpacity(0.2),
+                                      shape: const CircleBorder(),
+                                    ),
+                                    icon: const Icon(Icons.close,
+                                        color: Colors.redAccent, size: 14),
+                                    onPressed: () =>
+                                        vm.hapusDariKeranjang(jasa),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ...spareparts.map((sp) => Padding(
+                                  padding:
+                                      const EdgeInsets.only(left: 12, top: 4),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                          '↳ ${sp.sparepart.displayName} x${sp.qty}',
+                                          style: TextStyle(
+                                              color:
+                                                  Colors.white.withOpacity(0.6),
+                                              fontSize: 12)),
+                                      Text('Rp ${_formatRupiah(sp.subtotal)}',
+                                          style: TextStyle(
+                                              color:
+                                                  Colors.white.withOpacity(0.7),
+                                              fontSize: 12)),
+                                    ],
+                                  ),
+                                )),
+                          ],
+                        ),
                       ),
                     );
                   }).toList(),
@@ -201,7 +297,6 @@ class OrderSummaryPanel extends StatelessWidget {
         status: StatusItem.menunggu,
         createdAt: now,
         namaPekerjaan: jasa.nama,
-        kodePekerjaan: jasa.kode,
       );
     }).toList();
 

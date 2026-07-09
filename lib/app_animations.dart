@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-/// Route transisi slide up dari bawah ke atas.
 class AppSlideUpRoute extends PageRouteBuilder {
   final Widget page;
   AppSlideUpRoute({required this.page})

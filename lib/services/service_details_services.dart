@@ -19,8 +19,7 @@ class OrderServiceDetailServices {
             catatan_teknisi,
             created_at,
             order_kerja (
-              nama,
-              kode
+              nama
             )
           ''')
           .eq('nomor_wo', nomorWo)
@@ -51,7 +50,7 @@ class OrderServiceDetailServices {
           .select('''
             id, nomor_wo, order_kerja_id, harga_final,
             status, catatan_teknisi, created_at,
-            order_kerja ( nama, kode )
+            order_kerja ( nama )
           ''')
           .single();
       return OrderServiceDetail.fromJson(response);
@@ -73,6 +72,33 @@ class OrderServiceDetailServices {
             'status'          : statusBaru.label,
             'catatan_teknisi' : catatanTeknisi,
           })
+          .eq('id', detailId);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> updateHargaFinal({
+    required String detailId,
+    required int hargaBaru,
+  }) async {
+    try {
+      await _supabase
+          .from('order_service_detail')
+          .update({'harga_final': hargaBaru})
+          .eq('id', detailId);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> hapusDetailItem(String detailId) async {
+    try {
+      await _supabase
+          .from('order_service_detail')
+          .delete()
           .eq('id', detailId);
       return true;
     } catch (e) {

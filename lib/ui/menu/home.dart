@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../app_animations.dart';
+import '../../app_colors.dart';
 import '../../viewModel/dashboard_viewmodel.dart';
 import '../../models/service_logistic_models.dart';
 import 'add_car.dart';
+import 'pdf_debug_screen.dart';
 import 'service_screen.dart';
 import '../menu_sidebar.dart';
+import 'notification_screen.dart';
+import '../../viewModel/notification_viewmodel.dart';
+
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -17,16 +22,19 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   final DashboardViewModel _vm = DashboardViewModel();
+  final NotificationViewModel _notifVm = NotificationViewModel();
 
   @override
   void initState() {
     super.initState();
     _vm.muatServiceLogistics();
+    _notifVm.muatSemuaNotifikasi();
   }
 
   @override
   void dispose() {
     _vm.dispose();
+    _notifVm.dispose();
     super.dispose();
   }
 
@@ -115,6 +123,70 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 fontWeight: FontWeight.w600),
           ),
           const Spacer(),
+
+          // ── Tombol Debug PDF Estimasi ──
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf, color: AppColors.textGrey, size: 24),
+            tooltip: 'Debug PDF Estimasi',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (ctx) => const PdfDebugScreen(isEstimasi: true)),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+
+          // ── Tombol Notifikasi dengan badge ──
+          ListenableBuilder(
+            listenable: _notifVm,
+            builder: (context, _) {
+              final count = _notifVm.totalBadgeCount;
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none_rounded,
+                        color: AppColors.navy, size: 26),
+                    tooltip: 'Notifikasi Service',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationScreen(),
+                        ),
+                      ).then((_) => _notifVm.muatSemuaNotifikasi());
+                    },
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            count > 9 ? '9+' : '$count',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.redAccent),
             tooltip: 'Log Out',

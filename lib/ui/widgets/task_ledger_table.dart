@@ -40,12 +40,14 @@ class TaskLedgerTable extends StatelessWidget {
               borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
               border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Expanded(flex: 3, child: _TableHeaderText('Detail Pekerjaan')),
-                Expanded(flex: 2, child: _TableHeaderText('Kategori')),
-                Expanded(flex: 2, child: _TableHeaderText('Status')),
-                Expanded(flex: 3, child: _TableHeaderText('Catatan Teknisi')),
+                const Expanded(flex: 3, child: _TableHeaderText('Detail Pekerjaan')),
+                const Expanded(flex: 1, child: _TableHeaderText('Kategori')),
+                const Expanded(flex: 2, child: _TableHeaderText('Status')),
+                const Expanded(flex: 2, child: _TableHeaderText('Catatan Teknisi')),
+                if (!isHistory)
+                  const SizedBox(width: 32), // Spacer for Action menu
               ],
             ),
           ),
@@ -73,7 +75,7 @@ class TaskLedgerTable extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Task Details
+                  // Task Details & Harga
                   Expanded(
                     flex: 3,
                     child: Column(
@@ -89,11 +91,20 @@ class TaskLedgerTable extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
+                          'Rp ${NumberFormat('#,###', 'id_ID').format(item.hargaFinal)}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.orangeDark,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
                           item.status == StatusItem.selesai
                               ? 'Completed at ${_formatDate(item.createdAt)}'
                               : 'Added at ${_formatDate(item.createdAt)}',
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             color: AppColors.textGrey,
                           ),
                         ),
@@ -102,12 +113,12 @@ class TaskLedgerTable extends StatelessWidget {
                   ),
                   // Category
                   Expanded(
-                    flex: 2,
+                    flex: 1,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item.kodePekerjaan ?? 'General',
+                          '-',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -153,7 +164,7 @@ class TaskLedgerTable extends StatelessWidget {
                   ),
                   // Technical Notes
                   Expanded(
-                    flex: 3,
+                    flex: 2,
                     child: Text(
                       (item.catatanTeknisi == null || item.catatanTeknisi!.isEmpty)
                           ? '-'
@@ -165,6 +176,47 @@ class TaskLedgerTable extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // Action Menu
+                  if (!isHistory)
+                    SizedBox(
+                      width: 32,
+                      child: (item.status == StatusItem.selesai)
+                          ? null // Jangan tampilkan tombol edit/delete jika sudah selesai
+                          : PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textGrey),
+                              tooltip: 'Opsi Pekerjaan',
+                              padding: EdgeInsets.zero,
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  WorkOrderDialogs.showEditHargaDialog(context, vm, item);
+                                } else if (value == 'delete') {
+                                  WorkOrderDialogs.showHapusPekerjaanDialog(context, vm, item);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_outlined, size: 18, color: AppColors.primaryBlue),
+                                      SizedBox(width: 8),
+                                      Text('Edit Harga'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text('Hapus Jasa', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
                 ],
               ),
             );

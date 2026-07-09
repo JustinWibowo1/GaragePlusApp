@@ -1,6 +1,5 @@
 class Sparepart {
   final String id;
-  final String? kode;
   final String nama;
   final String? merk;
   final String kategori;          // kolom teks langsung, bukan FK
@@ -12,7 +11,6 @@ class Sparepart {
 
   Sparepart({
     required this.id,
-    this.kode,
     required this.nama,
     this.merk,
     required this.kategori,
@@ -42,7 +40,6 @@ class Sparepart {
   factory Sparepart.fromJson(Map<String, dynamic> json) {
     return Sparepart(
       id                      : json['id'] as String,
-      kode                    : json['kode'] as String?,
       nama                    : json['nama'] as String,
       merk                    : json['merk'] as String?,
       kategori                : json['kategori'] as String? ?? '',

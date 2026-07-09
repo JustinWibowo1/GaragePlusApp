@@ -117,9 +117,21 @@ class ReminderRow extends StatelessWidget {
     final Color bgColor =
         isOverdue ? const Color(0xFFFFEBEE) : const Color(0xFFFFF3E0);
     final String badgeText = isOverdue ? 'OVERDUE' : 'SEGERA';
-    final String desc = isOverdue
-        ? 'Lewat ${_formatCurrency(item.sisaKm.abs())} km dari jadwal'
-        : 'Sisa ${_formatCurrency(item.sisaKm)} km';
+    final String desc;
+    if (isOverdue) {
+      if (item.sisaHari != null && item.sisaHari! <= 0) {
+        desc = 'Terlewat ${item.sisaHari!.abs()} hari dari jadwal';
+      } else if (item.sisaKm != null && item.sisaKm! <= 0) {
+        desc = 'Lewat ${_formatCurrency(item.sisaKm!.abs())} km dari jadwal';
+      } else {
+        desc = 'Terlewat jadwal servis';
+      }
+    } else {
+      List<String> sisa = [];
+      if (item.sisaKm != null) sisa.add('${_formatCurrency(item.sisaKm!)} km');
+      if (item.sisaHari != null) sisa.add('${item.sisaHari} hari');
+      desc = 'Sisa: ' + sisa.join(' atau ');
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../ui/menu/home.dart';
 import '../ui/menu/add_car.dart';
 import '../ui/menu/service_screen.dart';
-import '../ui/menu/edit_car_screen.dart';
+import '../ui/menu/edit_katalog_screen.dart';
 
 class NavigationViewModel extends ChangeNotifier {
   int _selectedIndex = 0;
@@ -38,7 +38,7 @@ class NavigationViewModel extends ChangeNotifier {
         targetScreen = const ServicesScreen();
         break;
       case 3:
-        targetScreen = const EditCarScreen();
+        targetScreen = const EditKatalogScreen();
         break;
       default:
         targetScreen = const AdminDashboard();

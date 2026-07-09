@@ -46,7 +46,6 @@ class OrderServiceDetail {
   final String? catatanTeknisi;
   final DateTime createdAt;
   final String? namaPekerjaan;
-  final String? kodePekerjaan;
 
   OrderServiceDetail({
     required this.id,
@@ -57,7 +56,6 @@ class OrderServiceDetail {
     this.catatanTeknisi,
     required this.createdAt,
     this.namaPekerjaan,
-    this.kodePekerjaan,
   });
 
   factory OrderServiceDetail.fromJson(Map<String, dynamic> json) {
@@ -70,7 +68,6 @@ class OrderServiceDetail {
       catatanTeknisi  : json['catatan_teknisi'] as String?,
       createdAt       : DateTime.parse(json['created_at'] as String),
       namaPekerjaan   : json['order_kerja']?['nama'] as String?,
-      kodePekerjaan   : json['order_kerja']?['kode'] as String?,
     );
   }
 
@@ -84,7 +81,6 @@ class OrderServiceDetail {
       catatanTeknisi  : catatanTeknisi ?? this.catatanTeknisi,
       createdAt       : createdAt,
       namaPekerjaan   : namaPekerjaan,
-      kodePekerjaan   : kodePekerjaan,
     );
   }
 }

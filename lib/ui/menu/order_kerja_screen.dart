@@ -92,7 +92,7 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold)),
               Text(
                 'Untuk: ${jasa.nama}',
-                style: const TextStyle(fontSize: 13, color: Colors.grey),
+                style: const TextStyle(fontSize: 13, color: AppColors.navy),
               ),
               const SizedBox(height: 4),
               Wrap(
@@ -175,7 +175,7 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                             subtitle: Text(
                               'Rp ${_formatRupiah(sp.hargaJual)}${sp.spesifikasi != null ? ' • ${sp.spesifikasi}' : ''} • ${sp.kategori}',
                               style: TextStyle(
-                                  color: Colors.grey[500], fontSize: 11),
+                                  color: AppColors.navy, fontSize: 13),
                             ),
                             trailing: isSelected
                                 ? Row(
@@ -303,13 +303,15 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                             color: AppColors.navy)),
                     const SizedBox(height: 24),
 
-                    VehicleInfoCard(customer: widget.customer),
+                    VehicleInfoCard(
+                      customer: widget.customer,
+                      vm: _orderKerjaViewModel,
+                      kilometerController: _kilometerController,
+                    ),
                     const SizedBox(height: 32),
 
                     ComplaintFormCard(
-                      vm: _orderKerjaViewModel,
                       keluhanController: _keluhanController,
-                      kilometerController: _kilometerController,
                     ),
                     const SizedBox(height: 32),
 

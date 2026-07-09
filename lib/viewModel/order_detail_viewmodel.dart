@@ -16,12 +16,10 @@ class OrderDetailViewModel extends ChangeNotifier {
 
   List<OrderServiceSummary> daftarOrder = [];
   List<OrderServiceDetail> daftarDetail = [];
-  List<OrderKerja> _serviceRules = [];
-  final Map<String, int> _lastServiceOdometer = {};
+  List<ServiceReminderItem> _serviceReminders = [];
+  
   bool isLoading = false;
   String? errorMessage;
-  String _tipeMesin = '';
-  String _tipeTransmisi = '';
 
   int get totalItem => daftarDetail.length;
   int get itemSelesai =>
@@ -31,54 +29,27 @@ class OrderDetailViewModel extends ChangeNotifier {
   int get kmTerakhir => _kmTerakhir;
 
   List<ServiceReminderItem> get serviceReminders {
-    if (kmTerakhir == 0 || _serviceRules.isEmpty) return [];
-
-    final result = <ServiceReminderItem>[];
-
-    for (final rule in _serviceRules) {
-      final interval = rule.intervalKm;
-      if (interval == null || interval <= 0) {
-        continue;
-      }
-
-      if (_tipeMesin.isNotEmpty && rule.kompatibilitasMesin.isNotEmpty) {
-        if (!rule.kompatibilitasMesin.contains(_tipeMesin)) continue;
-      }
-      if (_tipeTransmisi.isNotEmpty &&
-          rule.kompatibilitasTransmisi.isNotEmpty) {
-        if (!rule.kompatibilitasTransmisi.contains(_tipeTransmisi)) continue;
-      }
-
-      final lastDoneOdometer = _lastServiceOdometer[rule.id];
-
-      int kmBerikutnya;
-
-      if (lastDoneOdometer != null) {
-        kmBerikutnya = lastDoneOdometer + interval;
-      } else {
-        kmBerikutnya = kmTerakhir + interval;
-      }
-
-      result.add(ServiceReminderItem(
-        nama: rule.nama,
-        intervalKm: interval,
-        kmTerakhir: kmTerakhir,
-        kmBerikutnya: kmBerikutnya,
-      ));
-    }
-
-    // Urutkan: overdue dulu, lalu yang paling dekat
-    result.sort((a, b) => a.sisaKm.compareTo(b.sisaKm));
+    if (_serviceReminders.isEmpty) return [];
+    
+    // Sort so overdue/urgent ones are on top
+    final result = List<ServiceReminderItem>.from(_serviceReminders);
+    result.sort((a, b) {
+      if (a.isOverdue && !b.isOverdue) return -1;
+      if (!a.isOverdue && b.isOverdue) return 1;
+      
+      final aVal = a.sisaHari != null && a.sisaHari! < (a.sisaKm ?? 999999) ? a.sisaHari! : (a.sisaKm ?? 999999);
+      final bVal = b.sisaHari != null && b.sisaHari! < (b.sisaKm ?? 999999) ? b.sisaHari! : (b.sisaKm ?? 999999);
+      
+      return aVal.compareTo(bVal);
+    });
     return result;
   }
 
-  // ── Fetch: service rules ──────────────────────────────────
-
-  Future<void> _muatServiceRules() async {
+  Future<void> _muatServiceReminders(String customerId) async {
     try {
-      _serviceRules = await _orderKerjaService.fetchServiceRules();
+      _serviceReminders = await _orderKerjaService.fetchServiceReminders(customerId);
     } catch (e) {
-      _serviceRules = [];
+      _serviceReminders = [];
     }
   }
 
@@ -87,8 +58,6 @@ class OrderDetailViewModel extends ChangeNotifier {
     String tipeMesin = '',
     String tipeTransmisi = '',
   }) async {
-    _tipeMesin = tipeMesin;
-    _tipeTransmisi = tipeTransmisi;
     isLoading = true;
     errorMessage = null;
     notifyListeners();
@@ -96,9 +65,8 @@ class OrderDetailViewModel extends ChangeNotifier {
     try {
       final results = await Future.wait([
         _orderServiceService.fetchOrderByCustomer(customerId),
-        _muatServiceRules(),
+        _muatServiceReminders(customerId),
         _customerService.fetchOdometer(customerId),
-        _orderServiceDetailService.fetchCompletedServiceOdometer(customerId),
       ]);
 
       final kmDariCustomer = results[2] as int;
@@ -108,20 +76,6 @@ class OrderDetailViewModel extends ChangeNotifier {
           ? 0
           : daftarOrder.map((o) => o.kilometer).reduce(max);
       _kmTerakhir = max(kmDariCustomer, kmDariOrder);
-
-      final completedItems = results[3] as List<dynamic>;
-      _lastServiceOdometer.clear();
-      for (var row in completedItems) {
-        final orderKerjaId = row['order_kerja_id'] as String;
-        final os = row['order_service'] as Map<String, dynamic>?;
-        if (os != null) {
-          final odometer = os['kilometer'] as int? ?? 0;
-          if (!_lastServiceOdometer.containsKey(orderKerjaId) ||
-              _lastServiceOdometer[orderKerjaId]! < odometer) {
-            _lastServiceOdometer[orderKerjaId] = odometer;
-          }
-        }
-      }
     } catch (e) {
       errorMessage = 'Gagal memuat data: $e';
     }
@@ -130,9 +84,6 @@ class OrderDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Menyinkronkan status order_service ke DB berdasarkan progress item pekerjaan.
-  /// Dipanggil setiap kali status item berubah.
-  /// Status 'Selesai' di DB hanya ditulis oleh [finalisasiOrder].
   Future<void> _cekDanUpdateStatusOrder() async {
     if (daftarDetail.isEmpty) return;
 
@@ -141,7 +92,6 @@ class OrderDetailViewModel extends ChangeNotifier {
     final semuaMenunggu =
         daftarDetail.every((d) => d.status == StatusItem.menunggu);
 
-    // Tentukan status baru untuk DB — 'Selesai' di DB hanya lewat finalisasiOrder
     final String statusBaru;
     if (semuaMenunggu) {
       statusBaru = 'Menunggu';
@@ -154,31 +104,22 @@ class OrderDetailViewModel extends ChangeNotifier {
     final statusSekarang =
         orderIndex != -1 ? daftarOrder[orderIndex].status : null;
 
-    // Jangan overwrite jika sudah 'Selesai' di DB (sudah difinalisasi)
     if (statusSekarang == 'Selesai') return;
 
-    // Update DB hanya jika status berubah
     if (statusSekarang != statusBaru) {
       await _orderServiceService.updateStatus(nomorWo, statusBaru);
 
-      // Update local state
       if (orderIndex != -1) {
         daftarOrder[orderIndex] =
             daftarOrder[orderIndex].copyWith(status: statusBaru);
       }
     }
 
-    // Tandai progress selesai di local state untuk menampilkan tombol Finalisasi
-    // (hanya UI, tidak mengubah DB)
     if (semuaSelesai &&
         orderIndex != -1 &&
         daftarOrder[orderIndex].status != 'Selesai') {
-      // Gunakan flag lokal, bukan mengubah daftarOrder.status
-      // Tombol Finalisasi dikontrol dari isSemuaItemSelesai && !isHistory di UI
     }
   }
-
-  // ── Fetch: detail WO ──────────────────────────────────────
 
   Future<void> muatDetail(int nomorWo) async {
     isLoading = true;
@@ -186,8 +127,6 @@ class OrderDetailViewModel extends ChangeNotifier {
     try {
       daftarDetail =
           await _orderServiceDetailService.fetchDetailByNomorWo(nomorWo);
-      // Catatan: TIDAK memanggil _cekDanUpdateStatusOrder di sini
-      // agar status dari DB tidak ditimpa saat pertama kali load
     } catch (e) {
       errorMessage = 'Gagal memuat detail: $e';
     }
@@ -196,53 +135,39 @@ class OrderDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Ubah status item pekerjaan ────────────────────────────
-
   Future<void> ubahStatusItem({
+    required int nomorWo,
     required String detailId,
     required StatusItem statusBaru,
     String? catatan,
   }) async {
+    isLoading = true;
+    notifyListeners();
+
     try {
-      // 1. Simpan ke Database (Supabase) terlebih dahulu
       final success = await _orderServiceDetailService.updateStatusItem(
         detailId: detailId,
         statusBaru: statusBaru,
         catatanTeknisi: catatan,
       );
-
       if (!success) {
         throw Exception('Gagal menyimpan perubahan ke server.');
       }
-
-      // 2. Jika berhasil, baru update UI (Local State)
-      final index = daftarDetail.indexWhere((d) => d.id == detailId);
-      if (index != -1) {
-        daftarDetail[index] = daftarDetail[index].copyWith(
-          status: statusBaru,
-          catatanTeknisi: catatan,
-        );
-      }
-
-      // 3. Sinkronkan status order_service ke DB
       await _cekDanUpdateStatusOrder();
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      await muatDetail(nomorWo);
+      return; 
     } catch (e) {
       errorMessage = 'Gagal memperbarui status: $e';
-      notifyListeners();
     }
+    
+    isLoading = false;
+    notifyListeners();
   }
 
-  /// Menambahkan pekerjaan baru ke dalam WO yang sedang berjalan.
-  /// Dipanggil dari tombol "Tambah Pekerjaan / Part" di halaman detail.
   Future<bool> tambahPekerjaanBaru({
     required int nomorWo,
     required String orderKerjaId,
     required String namaPekerjaan,
-    required String kodePekerjaan,
     required int hargaFinal,
   }) async {
     try {
@@ -252,11 +177,7 @@ class OrderDetailViewModel extends ChangeNotifier {
         hargaFinal   : hargaFinal,
       );
       if (item == null) throw Exception('Insert gagal');
-
-      // Update local state
       daftarDetail.add(item);
-
-      // Update total tagihan di local daftarOrder
       final orderIndex = daftarOrder.indexWhere((o) => o.nomorWo == nomorWo);
       if (orderIndex != -1) {
         final orderLama = daftarOrder[orderIndex];
@@ -273,7 +194,6 @@ class OrderDetailViewModel extends ChangeNotifier {
           deletedAt      : orderLama.deletedAt,
         );
 
-        // Update total tagihan di DB juga
         await _orderServiceService.updateTotalTagihan(
           nomorWo,
           orderLama.totalTagihan + hargaFinal,
@@ -289,8 +209,105 @@ class OrderDetailViewModel extends ChangeNotifier {
     }
   }
 
-  /// Finalisasi order: set status 'Selesai' di DB dan update local state.
-  /// Dipanggil saat kasir menekan tombol "FINALISASI & CETAK WO".
+  Future<bool> ubahHargaPekerjaan(int nomorWo, String detailId, int hargaLama, int hargaBaru) async {
+    try {
+      final success = await _orderServiceDetailService.updateHargaFinal(
+        detailId: detailId,
+        hargaBaru: hargaBaru,
+      );
+      if (!success) throw Exception('Update gagal');
+
+      // Update local state
+      final detailIndex = daftarDetail.indexWhere((d) => d.id == detailId);
+      if (detailIndex != -1) {
+        daftarDetail[detailIndex] = OrderServiceDetail(
+          id: daftarDetail[detailIndex].id,
+          nomorWo: daftarDetail[detailIndex].nomorWo,
+          orderKerjaId: daftarDetail[detailIndex].orderKerjaId,
+          hargaFinal: hargaBaru,
+          status: daftarDetail[detailIndex].status,
+          catatanTeknisi: daftarDetail[detailIndex].catatanTeknisi,
+          createdAt: daftarDetail[detailIndex].createdAt,
+          namaPekerjaan: daftarDetail[detailIndex].namaPekerjaan,
+        );
+      }
+
+      // Update WO total tagihan
+      final orderIndex = daftarOrder.indexWhere((o) => o.nomorWo == nomorWo);
+      if (orderIndex != -1) {
+        final orderLama = daftarOrder[orderIndex];
+        final selisih = hargaBaru - hargaLama;
+        final totalBaru = orderLama.totalTagihan + selisih;
+        
+        daftarOrder[orderIndex] = orderLama.copyWith(
+          updatedAt: DateTime.now(),
+        );
+        // Kita tidak bisa copyWith totalTagihan karena tidak ada parameter totalTagihan di copyWith OrderServiceSummary.
+        // Kita assign ulang saja:
+        daftarOrder[orderIndex] = OrderServiceSummary(
+          nomorWo        : orderLama.nomorWo,
+          customerId     : orderLama.customerId,
+          totalTagihan   : totalBaru,
+          status         : orderLama.status,
+          kilometer      : orderLama.kilometer,
+          catatanKeluhan : orderLama.catatanKeluhan,
+          createdAt      : orderLama.createdAt,
+          updatedAt      : DateTime.now(),
+          completedAt    : orderLama.completedAt,
+          deletedAt      : orderLama.deletedAt,
+        );
+
+        await _orderServiceService.updateTotalTagihan(nomorWo, totalBaru);
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = 'Gagal mengubah harga: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> hapusPekerjaan(int nomorWo, String detailId, int hargaFinal) async {
+    try {
+      final success = await _orderServiceDetailService.hapusDetailItem(detailId);
+      if (!success) throw Exception('Hapus gagal');
+
+      // Update local state
+      daftarDetail.removeWhere((d) => d.id == detailId);
+
+      // Update WO total tagihan
+      final orderIndex = daftarOrder.indexWhere((o) => o.nomorWo == nomorWo);
+      if (orderIndex != -1) {
+        final orderLama = daftarOrder[orderIndex];
+        final totalBaru = orderLama.totalTagihan - hargaFinal;
+
+        daftarOrder[orderIndex] = OrderServiceSummary(
+          nomorWo        : orderLama.nomorWo,
+          customerId     : orderLama.customerId,
+          totalTagihan   : totalBaru,
+          status         : orderLama.status,
+          kilometer      : orderLama.kilometer,
+          catatanKeluhan : orderLama.catatanKeluhan,
+          createdAt      : orderLama.createdAt,
+          updatedAt      : DateTime.now(),
+          completedAt    : orderLama.completedAt,
+          deletedAt      : orderLama.deletedAt,
+        );
+
+        await _orderServiceService.updateTotalTagihan(nomorWo, totalBaru);
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = 'Gagal menghapus pekerjaan: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> finalisasiOrder(int nomorWo, {DateTime? completedAt}) async {
     final selesaiPada = completedAt ?? DateTime.now();
     try {
