@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app_colors.dart';
 import '../../models/service_details_models.dart';
+import '../../models/pemeriksaan_wo_models.dart';
 import '../../viewModel/order_detail_viewmodel.dart';
+import '../../utils/formatters.dart';
 
 class WorkOrderDialogs {
   // ── Dialog Ubah Status Pekerjaan ─────────────────────────────────────
@@ -226,23 +229,33 @@ class WorkOrderDialogs {
   }
 
   // ── Dialog input data pemeriksaan sebelum cetak WO ──────────────────
-  static Future<Map<String, String>?> showCetakWorkOrderDialog(BuildContext context) async {
-    final cBatteryAwal = TextEditingController();
-    final cBatteryStater = TextEditingController();
-    final cBatteryPengisian = TextEditingController();
-    final cTekananDepan = TextEditingController();
-    final cTekananBelakang = TextEditingController();
-    final cTekananCadangan = TextEditingController();
-    final cTorsiMur = TextEditingController();
-    final cServiceKm = TextEditingController();
-    final cServiceBulan = TextEditingController();
-    final cCatatan = TextEditingController();
+  /// [prefill]: data pemeriksaan sebelumnya dari DB (untuk auto-fill kolom).
+  static Future<Map<String, String>?> showCetakWorkOrderDialog(
+    BuildContext context, {
+    PemeriksaanWO? prefill,
+  }) async {
+    final cBatteryAwal     = TextEditingController(text: prefill?.batteryAwal?.toString() ?? '');
+    final cBatteryStater   = TextEditingController(text: prefill?.batteryStater?.toString() ?? '');
+    final cBatteryPengisian= TextEditingController(text: prefill?.batteryPengisian?.toString() ?? '');
+    final cTekananDepan    = TextEditingController(text: prefill?.tekananDepan?.toString() ?? '');
+    final cTekananBelakang = TextEditingController(text: prefill?.tekananBelakang?.toString() ?? '');
+    final cTekananCadangan = TextEditingController(text: prefill?.tekananCadangan?.toString() ?? '');
+    final cTorsiMur        = TextEditingController(text: prefill?.torsiMur?.toString() ?? '');
+    final cServiceKm       = TextEditingController(
+      text: prefill?.serviceBerikutKm != null 
+          ? prefill!.serviceBerikutKm.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')
+          : '',
+    );
+    final cServiceBulan    = TextEditingController(text: prefill?.serviceBerikutBulan?.toString() ?? '');
+    final cCatatan         = TextEditingController(text: prefill?.catatanTambahan ?? '');
+    final cNamaMekanik     = TextEditingController(text: prefill?.namaMekanik ?? '');
+    final cNamaForeman     = TextEditingController(text: prefill?.namaForeman ?? '');
 
-    String batteryStatus = 'Normal';
-    String oliMesin = 'cukup';
-    String oliMatik = 'X';
-    String coolant = 'cukup';
-    String oliRemKopling = 'cukup';
+    String batteryStatus = prefill?.batteryStatus ?? 'Normal';
+    String oliMesin      = prefill?.oliMesin      ?? 'Cukup';
+    String oliMatik      = prefill?.oliMatik      ?? 'Cukup';
+    String coolant       = prefill?.coolant       ?? 'Cukup';
+    String oliRemKopling = prefill?.oliRemKopling ?? 'Cukup';
 
     final result = await showDialog<Map<String, String>>(
       context: context,
@@ -318,13 +331,35 @@ class WorkOrderDialogs {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Expanded(child: _dialogTextField(cServiceKm, 'Service berikut KM')),
+                      Expanded(
+                        child: _dialogTextField(
+                          cServiceKm,
+                          'Service berikut KM',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [ThousandsSeparatorFormatter()],
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Expanded(child: _dialogTextField(cServiceBulan, 'Bulan')),
+                      Expanded(
+                        child: _dialogTextField(
+                          cServiceBulan,
+                          'Bulan',
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   _dialogTextField(cCatatan, 'Catatan / Saran Tambahan', maxLines: 3),
+                  const SizedBox(height: 12),
+                  _dialogSection('👤 Personel'),
+                  Row(
+                    children: [
+                      Expanded(child: _dialogTextField(cNamaMekanik, 'Nama Mekanik')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _dialogTextField(cNamaForeman, 'Nama Foreman')),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -359,6 +394,8 @@ class WorkOrderDialogs {
                   'serviceKm': cServiceKm.text,
                   'serviceBulan': cServiceBulan.text,
                   'catatanTambahan': cCatatan.text,
+                  'namaMekanik': cNamaMekanik.text,
+                  'namaForeman': cNamaForeman.text,
                 });
               },
             ),
@@ -384,11 +421,14 @@ class WorkOrderDialogs {
     TextEditingController ctrl,
     String hint, {
     int maxLines = 1,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) =>
       TextField(
         controller: ctrl,
         maxLines: maxLines,
-        keyboardType: maxLines == 1 ? TextInputType.text : TextInputType.multiline,
+        keyboardType: keyboardType ?? (maxLines == 1 ? TextInputType.text : TextInputType.multiline),
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
           hintText: hint,
           isDense: true,
@@ -443,3 +483,4 @@ class WorkOrderDialogs {
         ],
       );
 }
+

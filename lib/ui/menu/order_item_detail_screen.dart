@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../app_animations.dart';
 import '../../models/service_details_models.dart';
 import '../../models/customer_models.dart';
+import '../../models/pemeriksaan_wo_models.dart';
 import '../../viewModel/order_detail_viewmodel.dart';
 import '../../services/pdf_printer_service.dart';
 import '../../services/work_order_filler.dart';
@@ -56,9 +57,38 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
     Map<String, String> formResult = {};
 
     if (isFinalisasi) {
-      final res = await WorkOrderDialogs.showCetakWorkOrderDialog(context);
+      final res = await WorkOrderDialogs.showCetakWorkOrderDialog(
+        context,
+        prefill: widget.vm.dataPemeriksaan, // auto-fill dari data sebelumnya
+      );
       if (res == null || !context.mounted) return;
       formResult = res;
+
+      // Simpan data pemeriksaan ke database
+      final pemeriksaanBaru = PemeriksaanWO(
+        id             : widget.vm.dataPemeriksaan?.id ?? '',
+        nomorWo        : widget.nomorWo,
+        batteryAwal    : double.tryParse(formResult['batteryAwal'] ?? ''),
+        batteryStater  : double.tryParse(formResult['batteryStater'] ?? ''),
+        batteryPengisian: double.tryParse(formResult['batteryPengisian'] ?? ''),
+        batteryStatus  : formResult['batteryStatus'],
+        oliMesin       : formResult['oliMesin'],
+        oliMatik       : formResult['oliMatik'],
+        coolant        : formResult['coolant'],
+        oliRemKopling  : formResult['oliRemKopling'],
+        tekananDepan   : double.tryParse(formResult['tekananDepan'] ?? ''),
+        tekananBelakang: double.tryParse(formResult['tekananBelakang'] ?? ''),
+        tekananCadangan: double.tryParse(formResult['tekananCadangan'] ?? ''),
+        torsiMur       : formResult['torsiMur'],
+        serviceBerikutKm   : int.tryParse(formResult['serviceKm']?.replaceAll('.', '') ?? ''),
+        serviceBerikutBulan: int.tryParse(formResult['serviceBulan'] ?? ''),
+        catatanTambahan: formResult['catatanTambahan'],
+        namaMekanik    : formResult['namaMekanik'],
+        namaForeman    : formResult['namaForeman'],
+        createdAt      : widget.vm.dataPemeriksaan?.createdAt ?? DateTime.now(),
+        updatedAt      : DateTime.now(),
+      );
+      await widget.vm.simpanPemeriksaan(pemeriksaanBaru);
     }
 
     setState(() => _isCetakLoading = true);
@@ -66,6 +96,12 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
     try {
       final details = widget.vm.daftarDetail;
       final orderPreview = order;
+
+      // dataPemeriksaan dari DB selalu menjadi fallback:
+      // - Saat isFinalisasi: formResult jadi sumber utama, DB sebagai isian default jika form kosong
+      // - Saat print biasa / history: formResult kosong {}, sehingga semua data dari DB
+      final p = widget.vm.dataPemeriksaan;
+
       final pdfBytes = await WorkOrderFiller.fill(
         order: orderPreview,
         details: details,
@@ -78,21 +114,23 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
         tahun: widget.customer.tahun.toString(),
         noRangka: widget.customer.nomorRangka,
         noMesin: widget.customer.nomorMesin,
-        batteryAwal: formResult['batteryAwal'] ?? '',
-        batteryStater: formResult['batteryStater'] ?? '',
-        batteryPengisian: formResult['batteryPengisian'] ?? '',
-        batteryStatus: formResult['batteryStatus'] ?? 'Normal',
-        oliMesin: formResult['oliMesin'] ?? 'cukup',
-        oliMatik: formResult['oliMatik'] ?? 'X',
-        coolant: formResult['coolant'] ?? 'cukup',
-        oliRemKopling: formResult['oliRemKopling'] ?? 'cukup',
-        tekananDepan: formResult['tekananDepan'] ?? '',
-        tekananBelakang: formResult['tekananBelakang'] ?? '',
-        tekananCadangan: formResult['tekananCadangan'] ?? '',
-        torsiMur: formResult['torsiMur'] ?? '',
-        serviceKm: formResult['serviceKm'] ?? '',
-        serviceBulan: formResult['serviceBulan'] ?? '',
-        catatanTambahan: formResult['catatanTambahan'] ?? '',
+        batteryAwal      : formResult['batteryAwal']      ?? p?.batteryAwal?.toString()      ?? '',
+        batteryStater    : formResult['batteryStater']    ?? p?.batteryStater?.toString()    ?? '',
+        batteryPengisian : formResult['batteryPengisian'] ?? p?.batteryPengisian?.toString() ?? '',
+        batteryStatus    : formResult['batteryStatus']    ?? p?.batteryStatus                ?? 'Normal',
+        oliMesin         : formResult['oliMesin']         ?? p?.oliMesin                     ?? 'Cukup',
+        oliMatik         : formResult['oliMatik']         ?? p?.oliMatik                     ?? 'X',
+        coolant          : formResult['coolant']          ?? p?.coolant                      ?? 'Cukup',
+        oliRemKopling    : formResult['oliRemKopling']    ?? p?.oliRemKopling                ?? 'Cukup',
+        tekananDepan     : formResult['tekananDepan']     ?? p?.tekananDepan?.toString()     ?? '',
+        tekananBelakang  : formResult['tekananBelakang']  ?? p?.tekananBelakang?.toString()  ?? '',
+        tekananCadangan  : formResult['tekananCadangan']  ?? p?.tekananCadangan?.toString()  ?? '',
+        torsiMur         : formResult['torsiMur']         ?? p?.torsiMur?.toString()         ?? '',
+        serviceKm        : formResult['serviceKm']        ?? p?.serviceBerikutKm?.toString() ?? '',
+        serviceBulan     : formResult['serviceBulan']     ?? p?.serviceBerikutBulan?.toString() ?? '',
+        catatanTambahan  : formResult['catatanTambahan']  ?? p?.catatanTambahan              ?? '',
+        namaMekanik      : formResult['namaMekanik']      ?? p?.namaMekanik                  ?? '',
+        namaForeman      : formResult['namaForeman']      ?? p?.namaForeman                  ?? '',
       );
 
       if (!context.mounted) return;

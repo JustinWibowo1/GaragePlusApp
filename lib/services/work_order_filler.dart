@@ -31,7 +31,7 @@ class WorkOrderFiller {
   }
 
   static Future<Uint8List> debugFillFieldNames() async {
-    final ByteData data = await rootBundle.load('asset/work_order-2.pdf');
+    final ByteData data = await rootBundle.load('asset/work_order-2-1.pdf');
     final PdfDocument document =
         PdfDocument(inputBytes: data.buffer.asUint8List());
     final PdfForm form = document.form;
@@ -87,10 +87,10 @@ class WorkOrderFiller {
     String batteryPengisian = '',
     String batteryStatus = 'Normal',
     // Oli & cairan
-    String oliMesin = 'cukup',
+    String oliMesin = 'Cukup',
     String oliMatik = 'X',
-    String coolant = 'cukup',
-    String oliRemKopling = 'cukup',
+    String coolant = 'Cukup',
+    String oliRemKopling = 'Cukup',
     // Tekanan ban
     String tekananDepan = '',
     String tekananBelakang = '',
@@ -100,8 +100,11 @@ class WorkOrderFiller {
     String serviceKm = '',
     String serviceBulan = '',
     String catatanTambahan = '',
+    // Personel
+    String namaMekanik = '',
+    String namaForeman = '',
   }) async {
-    final ByteData data = await rootBundle.load('asset/work_order-2.pdf');
+    final ByteData data = await rootBundle.load('asset/work_order-2-1.pdf');
     final PdfDocument document =
         PdfDocument(inputBytes: data.buffer.asUint8List());
     final PdfForm form = document.form;
@@ -127,36 +130,14 @@ class WorkOrderFiller {
             return '${e.key + 1}. $cat';
           }).join('\n');
 
-    // Menggabungkan oli & cairan
-    // oliMatik 'X' berarti tidak ada/tidak berlaku, jangan dicetak
-    // final oliText = [
-    //   if (oliMesin.isNotEmpty) 'Oli: $oliMesin',
-    //   if (oliMatik.isNotEmpty && oliMatik != 'X') 'Matik: $oliMatik',
-    //   if (coolant.isNotEmpty) 'Coolant: $coolant',
-    //   if (oliRemKopling.isNotEmpty) 'Rem/Kopl: $oliRemKopling',
-    // ].join(' | ');el
-
-    // Menggabungkan info torsi & service berikut
-    final lastField = [
-      if (torsiMur.isNotEmpty) 'Torsi: $torsiMur kg-m',
-      if (serviceKm.isNotEmpty || serviceBulan.isNotEmpty)
-        'Service berikut: $serviceKm km / $serviceBulan bln',
-    ].join(' | ');
-
     // Gabungkan batteryStatus ke dalam string batteryAwal
-    // final batteryAwalFull = [
-    //   if (batteryAwal.isNotEmpty) batteryAwal,
-    //   if (batteryStatus.isNotEmpty && batteryStatus != 'Normal') '($batteryStatus)',
-    // ].join(' ');
-    // final batteryAwalDisplay = batteryAwalFull.isEmpty
-    //     ? (batteryStatus != 'Normal' ? batteryStatus : '')
-    //     : batteryAwalFull;
+    final batteryAwalDisplay = [
+      if (batteryAwal.isNotEmpty) batteryAwal,
+      if (batteryStatus.isNotEmpty && batteryStatus != 'Normal') '($batteryStatus)',
+    ].join(' ');
 
-    // ── 4. Mapping index → nilai sesuai daftar nama field PDF ─────────
-    final Map<int, String> indexToValue = {
-      // 0: oliText,                        // TextFormField 5 (Oli & cairan)
-      1: lastField,                      // TextFormField 6 (Info tambahan)
-      2: order.catatanKeluhan,           // KeluhanPemilik
+    final Map<int, String> indexToValue = {         
+      0: order.catatanKeluhan,           // KeluhanPemilik
       3: pekerjaanText,                  // OrderKerja
       4: pekerjaanTextDenganCatatan,     // PekerjaanYangDilakukan
       5: namaPemilik,                    // NamaPemilik
@@ -174,13 +155,23 @@ class WorkOrderFiller {
       17: nomorPolisi,                   // NomorPolisi
       18: order.completedAt != null ? _jam(order.completedAt!) : '', // TextFormField 26 (JamSelesai)
       19: km,                            // KilometerMobil
-      // 20: batteryAwalDisplay,             // BatteryAwal (+ status jika tidak Normal)
-      // 21: batteryStater,                 // BatteryStarter
-      // 22: batteryPengisian,              // BatteryPengisian
-      // 23: tekananDepan,                  // TekananDepan
-      // 24: tekananBelakang,               // TekananBelakang
-      // 25: tekananCadangan,               // TekananCadangan
-      // 26: catatanTambahan,               // CatatanTambahan
+      20: batteryAwalDisplay,         // BatteryAwal + status
+      21: batteryStater,               // BatteryStarter
+      22: batteryPengisian,
+      34: batteryStatus,            // BatteryPengisian
+      23: tekananDepan,                // TekananDepan
+      24: tekananBelakang,             // TekananBelakang
+      25: tekananCadangan,             // TekananCadangan
+      26: catatanTambahan,             // CatatanTambahan
+      27: oliMesin,                    // OliMesin
+      28: oliMatik,                    // OliMatik
+      29: coolant,                     // Coolant
+      30: oliRemKopling,              // OliRemKopling
+      31: torsiMur,                    // TorsiMur
+      32: namaMekanik,                 // NamaMekanik
+      33: namaForeman,
+      2: serviceBulan,
+      1: serviceKm
     };
 
     // Step 1: Isi semua field teks dengan nilai yang sesuai
