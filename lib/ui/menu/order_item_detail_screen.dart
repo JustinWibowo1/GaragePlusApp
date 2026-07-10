@@ -55,8 +55,6 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
 
     Map<String, String> formResult = {};
 
-    // Sesuai request: Print PDF biasa tidak memunculkan dialog data pemeriksaan.
-    // Dialog HANYA muncul saat menekan tombol "Finalisasi & Cetak WO".
     if (isFinalisasi) {
       final res = await WorkOrderDialogs.showCetakWorkOrderDialog(context);
       if (res == null || !context.mounted) return;
@@ -342,6 +340,12 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                             onPressed: () async {
                               final hasil = await TambahPekerjaanSheet.show(context);
                               if (hasil == null || !context.mounted) return;
+                              
+                              print('LOG: Menambahkan Pekerjaan Baru/Custom ke WO #${widget.nomorWo}');
+                              print('LOG: ID Pekerjaan: ${hasil['id']}');
+                              print('LOG: Nama Pekerjaan: ${hasil['nama']}');
+                              print('LOG: Harga Final: ${hasil['hargaFinal']}');
+
                               final sukses = await widget.vm.tambahPekerjaanBaru(
                                 nomorWo      : widget.nomorWo,
                                 orderKerjaId : hasil['id'] as String,

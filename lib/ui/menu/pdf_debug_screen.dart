@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:printing/printing.dart';
 import '../../services/work_order_filler.dart';
 
 class PdfDebugScreen extends StatelessWidget {
   final bool isEstimasi;
 
-  const PdfDebugScreen({
-    Key? key,
-    this.isEstimasi = true, // Default ke PDF Estimasi
-  }) : super(key: key);
+  const PdfDebugScreen({super.key, this.isEstimasi = true});
 
   @override
   Widget build(BuildContext context) {

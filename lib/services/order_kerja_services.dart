@@ -10,7 +10,7 @@ class OrderKerjaServices {
       final response = await _supabase
           .from('order_kerja')
           .select('*')
-          .eq('is_active', true)
+          .eq('is_active', true,)
           .order('nama', ascending: true);
 
       return response.map((item) => OrderKerja.fromJson(item)).toList();

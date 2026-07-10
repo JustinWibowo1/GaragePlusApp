@@ -177,7 +177,9 @@ class OrderDetailViewModel extends ChangeNotifier {
         hargaFinal   : hargaFinal,
       );
       if (item == null) throw Exception('Insert gagal');
-      daftarDetail.add(item);
+      
+      // Reassign list agar UI Flutter mendeteksi perubahan state
+      daftarDetail = List.from(daftarDetail)..add(item);
       final orderIndex = daftarOrder.indexWhere((o) => o.nomorWo == nomorWo);
       if (orderIndex != -1) {
         final orderLama = daftarOrder[orderIndex];
@@ -274,8 +276,10 @@ class OrderDetailViewModel extends ChangeNotifier {
       final success = await _orderServiceDetailService.hapusDetailItem(detailId);
       if (!success) throw Exception('Hapus gagal');
 
-      // Update local state
-      daftarDetail.removeWhere((d) => d.id == detailId);
+      // Update local state by reassigning list
+      final newList = List<OrderServiceDetail>.from(daftarDetail);
+      newList.removeWhere((d) => d.id == detailId);
+      daftarDetail = newList;
 
       // Update WO total tagihan
       final orderIndex = daftarOrder.indexWhere((o) => o.nomorWo == nomorWo);

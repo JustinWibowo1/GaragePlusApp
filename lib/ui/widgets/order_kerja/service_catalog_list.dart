@@ -140,24 +140,30 @@ class _ServiceCatalogListState extends State<ServiceCatalogList> {
                         nama: nama,
                         harga: harga,
                       );
-                      if (ctx.mounted) Navigator.pop(ctx);
 
-                      if (result != null && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                '"${result.nama}" ditambahkan ke order kerja'),
-                            backgroundColor: Colors.green,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      } else if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Gagal menambahkan pekerjaan'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                      if (result != null && ctx.mounted) {
+                        // Tutup dialog custom ini
+                        Navigator.pop(ctx);
+                        // Langsung tutup sheet (TambahPekerjaanSheet) dengan data
+                        // pekerjaan baru agar order_item_detail_screen dapat
+                        // melanjutkan proses insert ke order_service_detail
+                        if (context.mounted) {
+                          Navigator.pop(context, {
+                            'id': result.id,
+                            'nama': result.nama,
+                            'hargaFinal': harga,
+                          });
+                        }
+                      } else {
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Gagal menambahkan pekerjaan'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       }
                     },
               icon: isSaving

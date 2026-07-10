@@ -279,23 +279,23 @@ class WorkOrderDialogs {
                   _dialogDropdown(
                     'Status Battery',
                     batteryStatus,
-                    ['Normal', 'kurang baik', 'waktunya diganti'],
+                    ['Normal', 'Kurang baik', 'Waktunya diganti'],
                     (v) => setS(() => batteryStatus = v!),
                   ),
                   const SizedBox(height: 12),
 
                   // ── Oli & Cairan ─────────────────────────
                   _dialogSection('🛢️ Oli & Cairan'),
-                  _dialogDropdown('Oli Mesin', oliMesin, ['cukup', 'kurang', 'minimal', 'X'],
+                  _dialogDropdown('Oli Mesin', oliMesin, ['Cukup', 'Kurang', 'Minimal', 'X'],
                       (v) => setS(() => oliMesin = v!)),
                   const SizedBox(height: 6),
-                  _dialogDropdown('Oli Matik', oliMatik, ['cukup', 'kurang', 'minimal', 'X'],
+                  _dialogDropdown('Oli Matik', oliMatik, ['Cukup', 'Kurang', 'Minimal', 'X'],
                       (v) => setS(() => oliMatik = v!)),
                   const SizedBox(height: 6),
-                  _dialogDropdown('Coolant', coolant, ['cukup', 'kurang', 'minimal'],
+                  _dialogDropdown('Coolant', coolant, ['Cukup', 'Kurang', 'Minimal'],
                       (v) => setS(() => coolant = v!)),
                   const SizedBox(height: 6),
-                  _dialogDropdown('Oli Rem & Kopling', oliRemKopling, ['cukup', 'kurang', 'minimal'],
+                  _dialogDropdown('Oli Rem & Kopling', oliRemKopling, ['Cukup', 'Kurang', 'Minimal'],
                       (v) => setS(() => oliRemKopling = v!)),
                   const SizedBox(height: 12),
 

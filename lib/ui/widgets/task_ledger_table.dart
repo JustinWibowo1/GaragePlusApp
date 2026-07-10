@@ -180,9 +180,7 @@ class TaskLedgerTable extends StatelessWidget {
                   if (!isHistory)
                     SizedBox(
                       width: 32,
-                      child: (item.status == StatusItem.selesai)
-                          ? null // Jangan tampilkan tombol edit/delete jika sudah selesai
-                          : PopupMenuButton<String>(
+                      child: PopupMenuButton<String>(
                               icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textGrey),
                               tooltip: 'Opsi Pekerjaan',
                               padding: EdgeInsets.zero,
