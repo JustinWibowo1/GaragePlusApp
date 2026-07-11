@@ -127,6 +127,44 @@ class NotificationViewModel extends ChangeNotifier {
   List<FollowUpItem> _followUpItems = [];
   List<FollowUpItem> get followUpItems => _followUpItems;
 
+  /// Tandai follow-up WO ini sudah selesai → hapus dari daftar
+  Future<void> markFollowUpDone(int nomorWo) async {
+    try {
+      await _supabase
+          .from('order_service')
+          .update({'is_followup_done': true})
+          .eq('nomor_wo', nomorWo);
+      _followUpItems.removeWhere((item) => item.nomorWo == nomorWo);
+      notifyListeners();
+    } catch (e) {
+      print('Gagal mark follow-up done: $e');
+    }
+  }
+
+  /// Tandai reminder WO ini sudah selesai → hapus dari daftar
+  Future<void> markReminderDone(String nomorRangka) async {
+    try {
+      // Cari semua nomorWo milik customer ini di reminderItems
+      final nomorWoList = _reminderItems
+          .where((item) => item.customer.nomorRangka == nomorRangka)
+          .map((item) => item.reminder)
+          .toList();
+      if (nomorWoList.isEmpty) return;
+
+      // Update semua WO milik customer tersebut
+      await _supabase
+          .from('order_service')
+          .update({'is_reminder_done': true})
+          .eq('customer_id', nomorRangka)
+          .eq('status', 'Selesai');
+
+      _reminderItems.removeWhere((item) => item.customer.nomorRangka == nomorRangka);
+      notifyListeners();
+    } catch (e) {
+      print('Gagal mark reminder done: $e');
+    }
+  }
+
   // ── State ────────────────────────────────────────────────────
   bool _isLoading = false;
   String? _errorMessage;

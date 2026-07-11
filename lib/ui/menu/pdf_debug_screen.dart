@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import '../../services/work_order_filler.dart';
+import '../../services/estimasi_filler.dart';
 
 class PdfDebugScreen extends StatelessWidget {
   final bool isEstimasi;
@@ -22,7 +23,7 @@ class PdfDebugScreen extends StatelessWidget {
         canChangePageFormat: false,
         build: (format) async {
           if (isEstimasi) {
-            return await WorkOrderFiller.debugEstimasiFieldNames();
+            return await EstimasiFiller.debugFieldNames();
           } else {
             return await WorkOrderFiller.debugFillFieldNames();
           }

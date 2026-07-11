@@ -152,8 +152,6 @@ class OrderDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Simpan (upsert) data pemeriksaan WO ke database.
-  /// Mengembalikan true jika berhasil.
   Future<bool> simpanPemeriksaan(PemeriksaanWO data) async {
     _isLoadingPemeriksaan = true;
     notifyListeners();

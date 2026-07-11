@@ -351,6 +351,20 @@ class _NotificationScreenState extends State<NotificationScreen>
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            // ── Tombol Done ──
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: const Text('Tandai Selesai'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blue.shade600,
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                onPressed: () => _vm.markFollowUpDone(item.nomorWo),
+              ),
+            ),
           ],
         ),
       ),
@@ -541,6 +555,27 @@ class _NotificationScreenState extends State<NotificationScreen>
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.3)),
                     ],
+                  ),
+                ),
+                // ── Tombol Done di header Reminder ──
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _vm.markReminderDone(customer.nomorRangka),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_rounded, size: 14, color: Colors.green.shade600),
+                        const SizedBox(width: 4),
+                        Text('Done', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.green.shade700)),
+                      ],
+                    ),
                   ),
                 ),
               ],
