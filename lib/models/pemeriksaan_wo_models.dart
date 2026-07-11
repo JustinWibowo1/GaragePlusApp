@@ -16,9 +16,9 @@ class PemeriksaanWO {
   final String? oliRemKopling;
 
   // Tekanan Ban
-  final double? tekananDepan;
-  final double? tekananBelakang;
-  final double? tekananCadangan;
+  final int? tekananDepan;
+  final int? tekananBelakang;
+  final int? tekananCadangan;
 
   // Lain-lain
   final String? torsiMur;
@@ -69,9 +69,9 @@ class PemeriksaanWO {
       oliMatik        : json['oli_matik'] as String?,
       coolant         : json['coolant'] as String?,
       oliRemKopling   : json['oli_rem_kopling'] as String?,
-      tekananDepan    : (json['tekanan_depan'] as num?)?.toDouble(),
-      tekananBelakang : (json['tekanan_belakang'] as num?)?.toDouble(),
-      tekananCadangan : (json['tekanan_cadangan'] as num?)?.toDouble(),
+      tekananDepan    : json['tekanan_depan'] as int?,
+      tekananBelakang : json['tekanan_belakang'] as int?,
+      tekananCadangan : json['tekanan_cadangan'] as int?,
       torsiMur        : json['torsi_mur'] as String?,
       serviceBerikutKm   : json['service_berikut_km'] as int?,
       serviceBerikutBulan: json['service_berikut_bulan'] as int?,

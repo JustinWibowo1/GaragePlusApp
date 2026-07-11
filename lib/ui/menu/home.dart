@@ -123,20 +123,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 fontWeight: FontWeight.w600),
           ),
           const Spacer(),
-
-          // ── Tombol Debug PDF Work Order ──
-          IconButton(
-            icon: const Icon(Icons.assignment, color: AppColors.textGrey, size: 24),
-            tooltip: 'Debug PDF Work Order',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (ctx) => const PdfDebugScreen(isEstimasi: false)),
-              );
-            },
-          ),
-          const SizedBox(width: 4),
-
           // ── Tombol Debug PDF Estimasi ──
           IconButton(
             icon: const Icon(Icons.picture_as_pdf, color: AppColors.textGrey, size: 24),
