@@ -4,6 +4,7 @@ import '../models/order_kerja_models.dart';
 import '../models/sparepart_models.dart';
 import '../services/order_kerja_services.dart';
 import '../services/sparepart_services.dart';
+import 'order_kerja_draft_cache.dart';
 
 class SparepartEntry {
   final Sparepart sparepart;
@@ -69,7 +70,22 @@ class OrderKerjaViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Load pekerjaan ────────────────────────────
+  /// Restore state keranjang dari draft yang tersimpan di cache.
+  /// Dipanggil di initState OrderKerjaScreen jika draft tersedia.
+  void restoreDariDraft(OrderKerjaDraft draft) {
+    keranjangJasa
+      ..clear()
+      ..addAll(draft.keranjangJasa);
+    sparepartPerPekerjaan
+      ..clear()
+      ..addAll(draft.sparepartPerPekerjaan);
+    hargaJasaCustom
+      ..clear()
+      ..addAll(draft.hargaJasaCustom);
+    _kilometer = draft.kilometer;
+    notifyListeners();
+  }
+
 
 
   Future<void> loadKerja() async {
@@ -275,7 +291,10 @@ class OrderKerjaViewModel extends ChangeNotifier {
 
       keranjangJasa.clear();
       sparepartPerPekerjaan.clear();
+      hargaJasaCustom.clear();
       _kilometer = 0;
+      // Hapus draft setelah order berhasil disimpan
+      OrderKerjaDraftCache.instance.hapus(customerId);
       notifyListeners();
       return true;
     } catch (e) {

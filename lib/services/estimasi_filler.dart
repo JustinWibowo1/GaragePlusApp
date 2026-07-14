@@ -107,25 +107,25 @@ class EstimasiFiller {
     // ⚠️  SESUAIKAN index di bawah ini setelah menjalankan debugFieldNames()
     // dan melihat hasil PDF debug untuk mengetahui posisi tiap field.
     final Map<int, String> indexToValue = {
-      0: order.nomorWoDisplay,   // Nomor WO / Estimasi
+      0: order.nomorWoDisplay,      // Nomor WO / Estimasi
       1: _tgl(order.tanggalMasuk),  // Tanggal Masuk
       2: _jam(order.tanggalMasuk),  // Jam Masuk
-      3: namaPemilik,            // Nama Pemilik
-      4: telepon,                // No. Telepon
-      5: alamat,                 // Alamat
-      6: merkMobil,              // Merk Mobil
-      7: typeMobil,              // Tipe Mobil
-      8: tahun,                  // Tahun
-      9: nomorPolisi,            // Nomor Polisi
-      10: noRangka,              // Nomor Rangka
-      11: noMesin,               // Nomor Mesin
-      12: km,                    // Kilometer
-      13: order.catatanKeluhan,  // Keluhan Pemilik
-      14: pekerjaanRows,         // Daftar Pekerjaan (Jasa)
-      15: sparepartRows,         // Daftar Sparepart
-      16: totalText,             // Total Estimasi Keseluruhan
-      17: catatanEstimasi,       // Catatan Tambahan
-      18: namaSA,                // Service Advisor
+      3: namaPemilik,               // Nama Pemilik
+      4: telepon,                   // No. Telepon
+      5: alamat,                    // Alamat
+      6: merkMobil,                 // Merk Mobil
+      7: typeMobil,                 // Tipe Mobil
+      8: tahun,                     // Tahun
+      9: nomorPolisi,               // Nomor Polisi
+      10: noRangka,                 // Nomor Rangka
+      11: noMesin,                  // Nomor Mesin
+      12: km,                       // Kilometer
+      // ── Bagian Harga yang Dikonfirmasi ──
+      16: pekerjaanRows,                         // Daftar Pekerjaan
+      18: 'Rp ${_rupiah(totalHargaJasa)}',       // Total Harga Jasa
+      19: sparepartRows,                         // Daftar Sparepart
+      21: 'Rp ${_rupiah(totalHargaSp)}',         // Total Harga Sparepart
+      22: totalText,                             // Total Keseluruhan (Jasa + Sp)
     };
 
     // ── Isi semua field ────────────────────────────────────────────────────

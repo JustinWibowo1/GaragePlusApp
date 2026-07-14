@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/order_kerja_models.dart';
 import '../../models/customer_models.dart';
 import '../../viewModel/order_kerja_viewmodel.dart';
+import '../../viewModel/order_kerja_draft_cache.dart';
 import '../../app_colors.dart';
 import '../widgets/order_kerja/vehicle_info_card.dart';
 import '../widgets/order_kerja/complaint_form_card.dart';
@@ -32,19 +33,40 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
       mesin: widget.customer.tipeMesin,
       transmisi: widget.customer.tipeTransmisi,
     );
-    // Pre-fill kilometer dari odometer terakhir yang sudah tersimpan
-    if (widget.customer.odometerTerakhir > 0) {
-      final formatted = widget.customer.odometerTerakhir.toString().replaceAllMapped(
-            RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-            (m) => '${m[1]}.',
-          );
-      _kilometerController.text = formatted;
-      _orderKerjaViewModel.setKilometer(widget.customer.odometerTerakhir);
+
+    final draft = OrderKerjaDraftCache.instance.ambil(widget.customer.nomorRangka);
+    if (draft != null && !draft.isEmpty) {
+      // Restore dari draft yang tersimpan sebelumnya
+      _orderKerjaViewModel.restoreDariDraft(draft);
+      _keluhanController.text = draft.keluhan;
+      if (draft.kilometer > 0) {
+        final formatted = draft.kilometer.toString().replaceAllMapped(
+              RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+              (m) => '${m[1]}.',
+            );
+        _kilometerController.text = formatted;
+      }
+    } else {
+      // Pre-fill kilometer dari odometer terakhir yang sudah tersimpan
+      if (widget.customer.odometerTerakhir > 0) {
+        final formatted = widget.customer.odometerTerakhir.toString().replaceAllMapped(
+              RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+              (m) => '${m[1]}.',
+            );
+        _kilometerController.text = formatted;
+        _orderKerjaViewModel.setKilometer(widget.customer.odometerTerakhir);
+      }
     }
   }
 
   @override
   void dispose() {
+    // Simpan draft ke cache sebelum screen ditutup
+    OrderKerjaDraftCache.instance.simpan(
+      nomorRangka: widget.customer.nomorRangka,
+      vm: _orderKerjaViewModel,
+      keluhan: _keluhanController.text,
+    );
     _orderKerjaViewModel.dispose();
     _keluhanController.dispose();
     _kilometerController.dispose();
