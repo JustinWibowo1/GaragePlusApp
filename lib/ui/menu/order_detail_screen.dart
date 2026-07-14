@@ -67,7 +67,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         page: OrderItemDetailScreen(
           vm: _vm,
           nomorWo: order.nomorWo,
-          tanggal: order.createdAt,
+          tanggal: order.tanggalMasuk,
           customer: widget.customer,
         ),
       ),

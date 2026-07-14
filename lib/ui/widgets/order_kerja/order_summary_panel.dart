@@ -282,8 +282,8 @@ class OrderSummaryPanel extends StatelessWidget {
           ? (int.tryParse(kilometerController.text.replaceAll('.', '')) ?? 0)
           : vm.kilometer,
       catatanKeluhan: keluhanController.text,
-      createdAt: now,
-      updatedAt: now,
+      tanggalMasuk: now,
+      tanggalSelesai: now,
     );
 
     final details = vm.keranjangJasa.map((jasa) {

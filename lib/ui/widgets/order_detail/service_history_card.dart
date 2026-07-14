@@ -119,7 +119,7 @@ class _ServiceCardState extends State<ServiceCard>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    DateColumn(date: order.createdAt, pending: pending),
+                    DateColumn(date: order.tanggalMasuk, pending: pending),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),

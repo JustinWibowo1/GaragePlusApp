@@ -224,8 +224,8 @@ class OrderDetailViewModel extends ChangeNotifier {
           status: orderLama.status,
           kilometer: orderLama.kilometer,
           catatanKeluhan: orderLama.catatanKeluhan,
-          createdAt: orderLama.createdAt,
-          updatedAt: DateTime.now(),
+          tanggalMasuk: orderLama.tanggalMasuk,
+          tanggalSelesai: DateTime.now(),
           completedAt: orderLama.completedAt,
           deletedAt: orderLama.deletedAt,
         );
@@ -277,7 +277,7 @@ class OrderDetailViewModel extends ChangeNotifier {
         final totalBaru = orderLama.totalTagihan + selisih;
 
         daftarOrder[orderIndex] = orderLama.copyWith(
-          updatedAt: DateTime.now(),
+          tanggalSelesai: DateTime.now(),
         );
         // Kita tidak bisa copyWith totalTagihan karena tidak ada parameter totalTagihan di copyWith OrderServiceSummary.
         // Kita assign ulang saja:
@@ -288,8 +288,8 @@ class OrderDetailViewModel extends ChangeNotifier {
           status: orderLama.status,
           kilometer: orderLama.kilometer,
           catatanKeluhan: orderLama.catatanKeluhan,
-          createdAt: orderLama.createdAt,
-          updatedAt: DateTime.now(),
+          tanggalMasuk: orderLama.tanggalMasuk,
+          tanggalSelesai: DateTime.now(),
           completedAt: orderLama.completedAt,
           deletedAt: orderLama.deletedAt,
         );
@@ -331,8 +331,8 @@ class OrderDetailViewModel extends ChangeNotifier {
           status: orderLama.status,
           kilometer: orderLama.kilometer,
           catatanKeluhan: orderLama.catatanKeluhan,
-          createdAt: orderLama.createdAt,
-          updatedAt: DateTime.now(),
+          tanggalMasuk: orderLama.tanggalMasuk,
+          tanggalSelesai: DateTime.now(),
           completedAt: orderLama.completedAt,
           deletedAt: orderLama.deletedAt,
         );
@@ -364,7 +364,7 @@ class OrderDetailViewModel extends ChangeNotifier {
         daftarOrder[index] = daftarOrder[index].copyWith(
           status: 'Selesai',
           completedAt: selesaiPada,
-          updatedAt: selesaiPada,
+          tanggalSelesai: selesaiPada,
         );
       }
       notifyListeners();

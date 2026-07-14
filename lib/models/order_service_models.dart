@@ -5,8 +5,8 @@ class OrderServiceSummary {
   final String status;
   final int kilometer;
   final String catatanKeluhan;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime tanggalMasuk;
+  final DateTime tanggalSelesai;
   final DateTime? completedAt;
   final DateTime? deletedAt;
 
@@ -17,15 +17,15 @@ class OrderServiceSummary {
     required this.status,
     required this.kilometer,
     required this.catatanKeluhan,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.tanggalMasuk,
+    required this.tanggalSelesai,
     this.completedAt,
     this.deletedAt,
   });
 
   /// Display-friendly WO number
   String get nomorWoDisplay =>
-      'WO-${createdAt.year}-${nomorWo.toString().padLeft(4, '0')}';
+      'WO-${tanggalMasuk.year}-${nomorWo.toString().padLeft(4, '0')}';
 
   factory OrderServiceSummary.fromJson(Map<String, dynamic> json) {
     return OrderServiceSummary(
@@ -35,8 +35,8 @@ class OrderServiceSummary {
       status: json['status'] as String? ?? 'Menunggu',
       kilometer: json['kilometer'] as int? ?? 0,
       catatanKeluhan: json['catatan_keluhan'] as String? ?? '',
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      tanggalMasuk: DateTime.parse(json['created_at'] as String),
+      tanggalSelesai: DateTime.parse(json['updated_at'] as String),
       // Tidak ada kolom completed_at di SQL → gunakan updated_at jika status Selesai
       completedAt: (json['status'] as String? ?? '') == 'Selesai'
           ? DateTime.parse(json['updated_at'] as String)
@@ -50,7 +50,7 @@ class OrderServiceSummary {
   OrderServiceSummary copyWith({
     String? status,
     DateTime? completedAt,
-    DateTime? updatedAt,
+    DateTime? tanggalSelesai,
   }) {
     return OrderServiceSummary(
       nomorWo        : nomorWo,
@@ -59,8 +59,8 @@ class OrderServiceSummary {
       status         : status ?? this.status,
       kilometer      : kilometer,
       catatanKeluhan : catatanKeluhan,
-      createdAt      : createdAt,
-      updatedAt      : updatedAt ?? this.updatedAt,
+      tanggalMasuk   : tanggalMasuk,
+      tanggalSelesai : tanggalSelesai ?? this.tanggalSelesai,
       completedAt    : completedAt ?? this.completedAt,
       deletedAt      : deletedAt,
     );

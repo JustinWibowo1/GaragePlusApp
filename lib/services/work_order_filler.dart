@@ -144,10 +144,10 @@ class WorkOrderFiller {
       6: alamat,                         // Alamat
       7: merkMobil,                      // MerkMobil
       8: noRangka,                       // NomorRangka
-      9: _tgl(order.createdAt),          // TanggalMasuk
+      9: _tgl(order.tanggalMasuk),          // TanggalMasuk
       10: typeMobil,                     // TipeMobil
       11: noMesin,                       // NomorMesin
-      12: _jam(order.createdAt),         // JamMasuk
+      12: _jam(order.tanggalMasuk),         // JamMasuk
       13: telepon,                       // NomorTelepon
       14: tahun,                         // TahunMobil
       15: order.completedAt != null ? _tgl(order.completedAt!) : '', // TanggalSelesai

@@ -318,6 +318,16 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                     ServiceCatalogList(
                       vm: _orderKerjaViewModel,
                       onServiceSelected: _handleServiceSelection,
+                      onCustomAdded: (hasil) {
+                        // Pekerjaan custom sudah masuk ke keranjang via ViewModel.
+                        // Tidak perlu Navigator.pop karena kita di halaman penuh.
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('"${hasil['nama']}" ditambahkan ke keranjang'),
+                            backgroundColor: Colors.green.shade600,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

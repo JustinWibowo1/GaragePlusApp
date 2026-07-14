@@ -1,9 +1,9 @@
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/order_service_models.dart';
 import '../models/service_details_models.dart';
+import '../models/sparepart_service_models.dart';
 
 class EstimasiFiller {
   static const _bulan = [
@@ -17,13 +17,15 @@ class EstimasiFiller {
     return '${local.day} ${_bulan[local.month]} ${local.year}';
   }
 
+  static String _jam(DateTime d) {
+    final local = d.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
+
   static String _rupiah(int amount) {
     return NumberFormat('#,###', 'id_ID').format(amount).replaceAll(',', '.');
   }
 
-  // ── Debug: Tampilkan index & nama semua field di estimasi_biaya.pdf ──────
-  /// Gunakan fungsi ini untuk mengetahui index masing-masing field PDF.
-  /// Hasilnya berupa PDF yang setiap field berisi "[index]NamaField".
   static Future<Uint8List> debugFieldNames() async {
     final ByteData data = await rootBundle.load('asset/estimasi_biaya.pdf');
     final PdfDocument document =
@@ -54,6 +56,7 @@ class EstimasiFiller {
   static Future<Uint8List> fill({
     required OrderServiceSummary order,
     required List<OrderServiceDetail> details,
+    required List<SparepartService> spareparts,
     // Data pelanggan
     required String namaPemilik,
     required String nomorPolisi,
@@ -86,31 +89,43 @@ class EstimasiFiller {
       return '$no. $nama — $hrg';
     }).join('\n');
 
-    // Total semua harga
-    final totalHarga = details.fold<int>(0, (sum, d) => sum + d.hargaFinal);
-    final totalText  = 'Rp ${_rupiah(totalHarga)}';
+    // Daftar sparepart + harga
+    final sparepartRows = spareparts.asMap().entries.map((e) {
+      final no   = e.key + 1;
+      final item = e.value;
+      final nama = item.namaItemSnapshot;
+      final hrg  = 'Rp ${_rupiah(item.subtotal)}';
+      return '$no. $nama (${item.qty}x) — $hrg';
+    }).join('\n');
+
+    // Total semua harga (Jasa + Sparepart)
+    final totalHargaJasa = details.fold<int>(0, (sum, d) => sum + d.hargaFinal);
+    final totalHargaSp   = spareparts.fold<int>(0, (sum, s) => sum + s.subtotal);
+    final totalText      = 'Rp ${_rupiah(totalHargaJasa + totalHargaSp)}';
 
     // ── Mapping index → nilai ───────────────────────────────────────────────
     // ⚠️  SESUAIKAN index di bawah ini setelah menjalankan debugFieldNames()
     // dan melihat hasil PDF debug untuk mengetahui posisi tiap field.
     final Map<int, String> indexToValue = {
       0: order.nomorWoDisplay,   // Nomor WO / Estimasi
-      1: _tgl(order.createdAt),  // Tanggal
-      2: namaPemilik,            // Nama Pemilik
-      3: telepon,                // No. Telepon
-      4: alamat,                 // Alamat
-      5: merkMobil,              // Merk Mobil
-      6: typeMobil,              // Tipe Mobil
-      7: tahun,                  // Tahun
-      8: nomorPolisi,            // Nomor Polisi
-      9: noRangka,               // Nomor Rangka
-      10: noMesin,               // Nomor Mesin
-      11: km,                    // Kilometer
-      12: order.catatanKeluhan,  // Keluhan Pemilik
-      13: pekerjaanRows,         // Daftar Pekerjaan & Harga
-      14: totalText,             // Total Estimasi
-      15: catatanEstimasi,       // Catatan Tambahan
-      16: namaSA,                // Service Advisor
+      1: _tgl(order.tanggalMasuk),  // Tanggal Masuk
+      2: _jam(order.tanggalMasuk),  // Jam Masuk
+      3: namaPemilik,            // Nama Pemilik
+      4: telepon,                // No. Telepon
+      5: alamat,                 // Alamat
+      6: merkMobil,              // Merk Mobil
+      7: typeMobil,              // Tipe Mobil
+      8: tahun,                  // Tahun
+      9: nomorPolisi,            // Nomor Polisi
+      10: noRangka,              // Nomor Rangka
+      11: noMesin,               // Nomor Mesin
+      12: km,                    // Kilometer
+      13: order.catatanKeluhan,  // Keluhan Pemilik
+      14: pekerjaanRows,         // Daftar Pekerjaan (Jasa)
+      15: sparepartRows,         // Daftar Sparepart
+      16: totalText,             // Total Estimasi Keseluruhan
+      17: catatanEstimasi,       // Catatan Tambahan
+      18: namaSA,                // Service Advisor
     };
 
     // ── Isi semua field ────────────────────────────────────────────────────

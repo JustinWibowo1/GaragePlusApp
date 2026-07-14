@@ -541,7 +541,7 @@ class _ServiceLogisticsRow extends StatelessWidget {
           Expanded(
             flex: 1,
             child: Text(
-              DateFormat('dd MMM').format(item.createdAt),
+              DateFormat('dd MMM').format(item.tanggalMasuk),
               style: TextStyle(
                   fontSize: 12, color: Colors.grey.shade600),
             ),

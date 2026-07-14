@@ -157,9 +157,7 @@ class _TambahPekerjaanSheetState extends State<TambahPekerjaanSheet> {
                         child: TextField(
                           controller: _hargaController,
                           keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            CurrencyInputFormatter()
-                          ],
+                          inputFormatters: [CurrencyInputFormatter()],
                           decoration: InputDecoration(
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(
@@ -213,12 +211,13 @@ class CurrencyInputFormatter extends TextInputFormatter {
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.isEmpty) return newValue;
-    final intValue = int.tryParse(newValue.text.replaceAll(RegExp(r'[^0-9]'), ''));
+    final intValue =
+        int.tryParse(newValue.text.replaceAll(RegExp(r'[^0-9]'), ''));
     if (intValue == null) return newValue;
     final newString = intValue.toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
+          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
     return TextEditingValue(
       text: newString,
       selection: TextSelection.collapsed(offset: newString.length),

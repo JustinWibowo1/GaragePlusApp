@@ -9,11 +9,16 @@ import 'service_card_item.dart';
 class ServiceCatalogList extends StatefulWidget {
   final OrderKerjaViewModel vm;
   final Function(BuildContext, dynamic, List<dynamic>) onServiceSelected;
+  /// Dipanggil setelah pekerjaan custom berhasil ditambahkan ke katalog.
+  /// Jika NULL (default), widget akan memanggil Navigator.pop untuk menutup sheet.
+  /// Jika diisi, widget TIDAK memanggil Navigator.pop — pemangil yang mengatur navigasi.
+  final void Function(Map<String, dynamic> hasil)? onCustomAdded;
 
   const ServiceCatalogList({
     Key? key,
     required this.vm,
     required this.onServiceSelected,
+    this.onCustomAdded,
   }) : super(key: key);
 
   @override
@@ -142,17 +147,20 @@ class _ServiceCatalogListState extends State<ServiceCatalogList> {
                       );
 
                       if (result != null && ctx.mounted) {
-                        // Tutup dialog custom ini
-                        Navigator.pop(ctx);
-                        // Langsung tutup sheet (TambahPekerjaanSheet) dengan data
-                        // pekerjaan baru agar order_item_detail_screen dapat
-                        // melanjutkan proses insert ke order_service_detail
+                        Navigator.pop(ctx); // Tutup dialog custom
                         if (context.mounted) {
-                          Navigator.pop(context, {
-                            'id': result.id,
-                            'nama': result.nama,
+                          final payload = {
+                            'id'        : result.id,
+                            'nama'      : result.nama,
                             'hargaFinal': harga,
-                          });
+                          };
+                          if (widget.onCustomAdded != null) {
+                            // Dipanggil dari halaman langsung → biarkan pemanggil yang atur
+                            widget.onCustomAdded!(payload);
+                          } else {
+                            // Dipanggil dari dalam TambahPekerjaanSheet → tutup sheet
+                            Navigator.pop(context, payload);
+                          }
                         }
                       } else {
                         if (ctx.mounted) Navigator.pop(ctx);

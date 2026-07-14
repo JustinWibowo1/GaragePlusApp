@@ -53,7 +53,7 @@ class DashboardService {
                   .trim(),
           status: order['status'] as String? ?? 'Menunggu',
           totalBill: order['total_tagihan'] as int? ?? 0,
-          createdAt: DateTime.parse(order['created_at'] as String),
+          tanggalMasuk: DateTime.parse(order['created_at'] as String),
           serviceNames: serviceNames,
           completedItems: completedItems,
           totalItems: totalItems,

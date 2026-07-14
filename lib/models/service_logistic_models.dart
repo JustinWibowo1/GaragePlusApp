@@ -5,7 +5,7 @@ class ServiceLogisticsItem {
   final String vehicleName;
   final String status;
   final int totalBill;
-  final DateTime createdAt;
+  final DateTime tanggalMasuk;
   final List<String> serviceNames;
   final int completedItems;
   final int totalItems;
@@ -17,14 +17,14 @@ class ServiceLogisticsItem {
     required this.vehicleName,
     required this.status,
     required this.totalBill,
-    required this.createdAt,
+    required this.tanggalMasuk,
     required this.serviceNames,
     required this.completedItems,
     required this.totalItems,
   });
 
   /// Display-friendly WO number
-  String get nomorWoDisplay => 'WO-${createdAt.year}-${nomorWo.toString().padLeft(4, '0')}';
+  String get nomorWoDisplay => 'WO-${tanggalMasuk.year}-${nomorWo.toString().padLeft(4, '0')}';
 
   double get progress =>
       totalItems == 0 ? 0 : completedItems / totalItems;
