@@ -58,6 +58,23 @@ class OrderKerjaViewModel extends ChangeNotifier {
   String _tipeMesin = '';
   String _tipeTransmisi = '';
 
+  DateTime? _tanggalMasukManual;
+  TimeOfDay? _jamMasukManual;
+
+  DateTime? get tanggalMasukManual => _tanggalMasukManual;
+  TimeOfDay? get jamMasukManual => _jamMasukManual;
+
+  void setWaktuMasuk(DateTime? tanggal, TimeOfDay? jam) {
+    _tanggalMasukManual = tanggal;
+    _jamMasukManual = jam;
+    notifyListeners();
+  }
+
+  void _clearWaktuMasuk() {
+    _tanggalMasukManual = null;
+    _jamMasukManual = null;
+  }
+
   String get tipeMesin => _tipeMesin;
   String get tipeTransmisi => _tipeTransmisi;
 
@@ -239,6 +256,19 @@ class OrderKerjaViewModel extends ChangeNotifier {
 
     try {
       final supabase = Supabase.instance.client;
+      
+      // Hitung created_at dari tanggal & jam masuk manual (jika ada)
+      DateTime waktuMasuk = DateTime.now();
+      if (_tanggalMasukManual != null) {
+        waktuMasuk = DateTime(
+          _tanggalMasukManual!.year,
+          _tanggalMasukManual!.month,
+          _tanggalMasukManual!.day,
+          _jamMasukManual?.hour ?? waktuMasuk.hour,
+          _jamMasukManual?.minute ?? waktuMasuk.minute,
+        );
+      }
+
       final header = await supabase
           .from('order_service')
           .insert({
@@ -247,6 +277,7 @@ class OrderKerjaViewModel extends ChangeNotifier {
             'catatan_keluhan': catatanKeluhan,
             'total_tagihan': totalEstimasi,
             'status': 'Menunggu',
+            'created_at': waktuMasuk.toIso8601String(),
           })
           .select('nomor_wo')
           .single();
@@ -293,6 +324,7 @@ class OrderKerjaViewModel extends ChangeNotifier {
       sparepartPerPekerjaan.clear();
       hargaJasaCustom.clear();
       _kilometer = 0;
+      _clearWaktuMasuk();
       // Hapus draft setelah order berhasil disimpan
       OrderKerjaDraftCache.instance.hapus(customerId);
       notifyListeners();

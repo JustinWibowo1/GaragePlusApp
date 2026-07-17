@@ -240,13 +240,19 @@ class WorkOrderDialogs {
     final cTekananDepan    = TextEditingController(text: prefill?.tekananDepan?.toString() ?? '');
     final cTekananBelakang = TextEditingController(text: prefill?.tekananBelakang?.toString() ?? '');
     final cTekananCadangan = TextEditingController(text: prefill?.tekananCadangan?.toString() ?? '');
-    final cTorsiMur        = TextEditingController(text: prefill?.torsiMur?.toString() ?? '');
+    final cTorsiMur        = TextEditingController(text: prefill?.torsiMur ?? '');
     final cServiceKm       = TextEditingController(
       text: prefill?.serviceBerikutKm != null 
           ? prefill!.serviceBerikutKm.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')
           : '',
     );
-    final cServiceBulan    = TextEditingController(text: prefill?.serviceBerikutBulan?.toString() ?? '');
+    
+    String prefillBulan = '';
+    if (prefill?.serviceBerikutBulan != null) {
+      prefillBulan = "${prefill!.serviceBerikutBulan!.year}-${prefill.serviceBerikutBulan!.month.toString().padLeft(2, '0')}-${prefill.serviceBerikutBulan!.day.toString().padLeft(2, '0')}";
+    }
+    final cServiceBulan    = TextEditingController(text: prefillBulan);
+
     final cCatatan         = TextEditingController(text: prefill?.catatanTambahan ?? '');
     final cNamaMekanik     = TextEditingController(text: prefill?.namaMekanik ?? '');
     final cNamaForeman     = TextEditingController(text: prefill?.namaForeman ?? '');
@@ -341,10 +347,29 @@ class WorkOrderDialogs {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _dialogTextField(
-                          cServiceBulan,
-                          'Bulan',
-                          keyboardType: TextInputType.number,
+                        child: StatefulBuilder(
+                          builder: (context, setStateBuilder) {
+                            return InkWell(
+                              onTap: () async {
+                                final date = await showDatePicker(
+                                  context: context,
+                                  initialDate: prefill?.serviceBerikutBulan ?? DateTime.now(),
+                                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                                  lastDate: DateTime.now().add(const Duration(days: 3650)),
+                                );
+                                if (date != null) {
+                                  cServiceBulan.text = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+                                  setStateBuilder(() {});
+                                }
+                              },
+                              child: IgnorePointer(
+                                child: _dialogTextField(
+                                  cServiceBulan,
+                                  'Tgl Service (YYYY-MM-DD)',
+                                ),
+                              ),
+                            );
+                          }
                         ),
                       ),
                     ],

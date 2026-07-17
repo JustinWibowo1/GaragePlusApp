@@ -88,14 +88,90 @@ class OrderSummaryPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          height: 80,
-          width: double.infinity,
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200)),
-          child: const Center(child: Text('Area Teknisi')),
+        ListenableBuilder(
+          listenable: vm,
+          builder: (context, _) {
+            final tgl = vm.tanggalMasukManual;
+            final jam = vm.jamMasukManual;
+            
+            String textTgl = tgl != null 
+                ? "${tgl.day.toString().padLeft(2, '0')}/${tgl.month.toString().padLeft(2, '0')}/${tgl.year}" 
+                : "Tanggal Masuk (Otomatis)";
+            String textJam = jam != null 
+                ? "${jam.hour.toString().padLeft(2, '0')}:${jam.minute.toString().padLeft(2, '0')}" 
+                : "Jam Masuk (Otomatis)";
+
+            return Container(
+              padding: const EdgeInsets.all(16),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Data Masuk Kendaraan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.navy)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: tgl ?? DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now(),
+                            );
+                            if (date != null) {
+                              vm.setWaktuMasuk(date, jam);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today, size: 16, color: Colors.black54),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(textTgl, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: jam ?? TimeOfDay.now(),
+                            );
+                            if (time != null) {
+                              vm.setWaktuMasuk(tgl ?? DateTime.now(), time);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.access_time, size: 16, color: Colors.black54),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(textJam, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }
         ),
         const SizedBox(height: 24),
         ListenableBuilder(

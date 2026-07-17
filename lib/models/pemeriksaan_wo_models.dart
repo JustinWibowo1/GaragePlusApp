@@ -23,7 +23,7 @@ class PemeriksaanWO {
   // Lain-lain
   final String? torsiMur;
   final int? serviceBerikutKm;
-  final int? serviceBerikutBulan;
+  final DateTime? serviceBerikutBulan;
   final String? catatanTambahan;
 
   // Personel
@@ -74,7 +74,7 @@ class PemeriksaanWO {
       tekananCadangan : json['tekanan_cadangan'] as int?,
       torsiMur        : json['torsi_mur'] as String?,
       serviceBerikutKm   : json['service_berikut_km'] as int?,
-      serviceBerikutBulan: json['service_berikut_bulan'] as int?,
+      serviceBerikutBulan: json['service_berikut_bulan'] != null ? DateTime.tryParse(json['service_berikut_bulan'].toString()) : null,
       catatanTambahan : json['catatan_tambahan'] as String?,
       namaMekanik     : json['nama_mekanik'] as String?,
       namaForeman     : json['nama_foreman'] as String?,
@@ -99,7 +99,7 @@ class PemeriksaanWO {
       'tekanan_cadangan'     : tekananCadangan,
       'torsi_mur'            : torsiMur,
       'service_berikut_km'   : serviceBerikutKm,
-      'service_berikut_bulan': serviceBerikutBulan,
+      'service_berikut_bulan': serviceBerikutBulan?.toIso8601String().split('T')[0],
       'catatan_tambahan'     : catatanTambahan,
       'nama_mekanik'         : namaMekanik,
       'nama_foreman'         : namaForeman,

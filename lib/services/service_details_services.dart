@@ -55,6 +55,7 @@ class OrderServiceDetailServices {
           .single();
       return OrderServiceDetail.fromJson(response);
     } catch (e) {
+      print('ERROR insertDetailItem: $e');
       return null;
     }
   }
