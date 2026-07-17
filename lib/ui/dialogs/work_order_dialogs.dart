@@ -8,9 +8,10 @@ import '../../utils/formatters.dart';
 
 class WorkOrderDialogs {
   // ── Dialog Ubah Status Pekerjaan ─────────────────────────────────────
-  static Future<void> showUbahStatusDialog(
-      BuildContext context, OrderDetailViewModel vm, OrderServiceDetail item) async {
-    final catatanController = TextEditingController(text: item.catatanTeknisi ?? '');
+  static Future<void> showUbahStatusDialog(BuildContext context,
+      OrderDetailViewModel vm, OrderServiceDetail item) async {
+    final catatanController =
+        TextEditingController(text: item.catatanTeknisi ?? '');
     final statusBaru = item.status == StatusItem.menunggu
         ? StatusItem.dikerjakan
         : StatusItem.selesai;
@@ -25,57 +26,68 @@ class WorkOrderDialogs {
           final tombolDisabled = isSelesai && catatanKosong;
 
           return AlertDialog(
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
             title: Text('${statusBaru.emoji} Tandai ${statusBaru.label}?'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.namaPekerjaan ?? '',
-                    style: const TextStyle(
-                        color: Colors.grey, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 16),
-                if (isSelesai) ...[
-                  const Text(
-                    'Apa yang dikerjakan mekanik? *',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.navy,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: catatanController,
-                    maxLines: 3,
-                    onChanged: (v) => setS(() {}),
-                    decoration: InputDecoration(
-                      hintText: 'Misal: Baut oli aus, diakali dengan seal tape...',
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.primaryBlue),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.6,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.namaPekerjaan ?? '',
+                      style: const TextStyle(
+                          color: Colors.black, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 16),
+                  if (isSelesai) ...[
+                    const Text(
+                      'Apa yang dikerjakan mekanik? *',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navy,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: catatanController,
+                      maxLines: 3,
+                      onChanged: (v) => setS(() {}),
+                      decoration: InputDecoration(
+                        hintText:
+                            'Misal: Baut oli aus, diakali dengan seal tape...',
+                        hintStyle: TextStyle(
+                            color: Colors.grey.shade400, fontSize: 13),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              const BorderSide(color: AppColors.primaryBlue),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                child: const Text('Batal',
+                    style: TextStyle(color: Colors.black)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isSelesai ? AppColors.green : AppColors.amber,
+                  backgroundColor:
+                      isSelesai ? AppColors.green : AppColors.amber,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
                   elevation: 0,
@@ -90,7 +102,8 @@ class WorkOrderDialogs {
                       },
                 child: Text(
                   'Ya, ${statusBaru.label}',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
