@@ -376,10 +376,20 @@ class OrderSummaryPanel extends StatelessWidget {
       );
     }).toList();
 
+    final Map<int, String> spTexts = {};
+    for (int i = 0; i < vm.keranjangJasa.length; i++) {
+      final jasa = vm.keranjangJasa[i];
+      final spList = vm.sparepartPerPekerjaan[jasa.id] ?? [];
+      if (spList.isNotEmpty) {
+        spTexts[i] = spList.map((s) => s.sparepart.nama).join(', ');
+      }
+    }
+
     try {
       final pdfBytes = await WorkOrderFiller.fill(
         order: orderSummary,
         details: details,
+        sparepartTexts: spTexts,
         namaPemilik: customer.namaPemilik,
         nomorPolisi: customer.nomorPolisi,
         telepon: customer.noTelepon ?? '',

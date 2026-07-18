@@ -8,10 +8,11 @@ import '../../services/pdf_printer_service.dart';
 import '../../services/work_order_filler.dart';
 import 'package:intl/intl.dart';
 import '../../app_colors.dart';
-import '../widgets/vehicle_passport_card.dart';
-import '../widgets/task_ledger_table.dart';
+import '../widgets/car_information_card.dart';
+import '../widgets/tabel_pekerjaan.dart';
 import '../dialogs/work_order_dialogs.dart';
-import '../widgets/order_kerja/tambah_pekerjaan_sheet.dart';
+import '../../viewModel/invoice_viewmodel.dart';
+import '../widgets/tabel_invoice.dart';
 
 class OrderItemDetailScreen extends StatefulWidget {
   final OrderDetailViewModel vm;
@@ -33,12 +34,14 @@ class OrderItemDetailScreen extends StatefulWidget {
 
 class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
   bool _isCetakLoading = false;
+  final _invoiceVm = InvoiceViewModel();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.vm.muatDetail(widget.nomorWo);
+      _invoiceVm.muatInvoice(widget.nomorWo);
     });
   }
 
@@ -102,9 +105,19 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
       // - Saat print biasa / history: formResult kosong {}, sehingga semua data dari DB
       final p = widget.vm.dataPemeriksaan;
 
+      final Map<int, String> spTexts = {};
+      for (int i = 0; i < details.length; i++) {
+        final detail = details[i];
+        final spList = widget.vm.sparepartMap[detail.id] ?? [];
+        if (spList.isNotEmpty) {
+          spTexts[i] = spList.map((s) => s.namaItemSnapshot).join(', ');
+        }
+      }
+
       final pdfBytes = await WorkOrderFiller.fill(
         order: orderPreview,
         details: details,
+        sparepartTexts: spTexts,
         namaPemilik: widget.customer.namaPemilik,
         nomorPolisi: widget.customer.nomorPolisi,
         telepon: widget.customer.noTelepon ?? '',
@@ -352,7 +365,6 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                     ),
                     const SizedBox(height: 40),
 
-                    // ── Professional Task Ledger ─────────────────────────
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -375,29 +387,7 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () async {
-                              final hasil = await TambahPekerjaanSheet.show(context);
-                              if (hasil == null || !context.mounted) return;
-                              
-                              print('LOG: Menambahkan Pekerjaan Baru/Custom ke WO #${widget.nomorWo}');
-                              print('LOG: ID Pekerjaan: ${hasil['id']}');
-                              print('LOG: Nama Pekerjaan: ${hasil['nama']}');
-                              print('LOG: Harga Final: ${hasil['hargaFinal']}');
-
-                              final sukses = await widget.vm.tambahPekerjaanBaru(
-                                nomorWo      : widget.nomorWo,
-                                orderKerjaId : hasil['id'] as String,
-                                namaPekerjaan: hasil['nama'] as String,
-                                hargaFinal   : hasil['hargaFinal'] as int,
-                              );
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text(sukses
-                                    ? '✅ "${hasil['nama']}" berhasil ditambahkan'
-                                    : '⚠️ Gagal menambahkan pekerjaan'),
-                                backgroundColor: sukses ? AppColors.green : AppColors.urgentBg,
-                              ));
-                            },
+                            onPressed: () => widget.vm.showTambahPekerjaanSheetUI(context, widget.nomorWo),
                           ),
                       ],
                     ),
@@ -407,6 +397,46 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                       daftarDetail: widget.vm.daftarDetail,
                       isHistory: isHistory,
                     ),
+                    const SizedBox(height: 32),
+                    
+                    // ── Invoice Section ──
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Invoice Mobil',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryBlue,
+                          ),
+                        ),
+                        if (!isHistory)
+                          TextButton.icon(
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Tambah Invoice'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primaryBlue,
+                            ),
+                            onPressed: () => _invoiceVm.showTambahInvoiceDialog(context, widget.nomorWo),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ListenableBuilder(
+                      listenable: _invoiceVm,
+                      builder: (context, _) {
+                        if (_invoiceVm.isLoading) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        return TabelInvoice(
+                          vm: _invoiceVm,
+                          daftarInvoice: _invoiceVm.daftarInvoice,
+                          isHistory: isHistory,
+                        );
+                      },
+                    ),
+
                     const SizedBox(
                         height: 100), // Ruang ekstra untuk tombol finalisasi
                   ],

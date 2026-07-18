@@ -71,6 +71,7 @@ class WorkOrderFiller {
   static Future<Uint8List> fill({
     required OrderServiceSummary order,
     required List<OrderServiceDetail> details,
+    Map<int, String> sparepartTexts = const {}, // Tambahan parameter untuk string sparepart per index detail
     required String namaPemilik,
     required String nomorPolisi,
     // Data kendaraan
@@ -117,11 +118,17 @@ class WorkOrderFiller {
 
     final pekerjaanText = details.isEmpty
         ? ''
-        : details
-            .asMap()
-            .entries
-            .map((e) => '${e.key + 1}. ${e.value.namaPekerjaan ?? ''}')
-            .join('\n');
+        : details.asMap().entries.map((e) {
+            final idx = e.key + 1;
+            final namaPekerjaan = e.value.namaPekerjaan ?? '';
+            String text = '$idx. $namaPekerjaan';
+            
+            final spText = sparepartTexts[e.key];
+            if (spText != null && spText.isNotEmpty) {
+              text += '  $spText';
+            }
+            return text;
+          }).join('\n');
 
     final pekerjaanTextDenganCatatan = selesaiDetails.isEmpty
         ? ''

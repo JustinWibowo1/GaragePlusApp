@@ -9,6 +9,10 @@ import '../services/customer_services.dart';
 import '../services/service_details_services.dart';
 import '../services/order_service_services.dart';
 import '../services/pemeriksaan_wo_service.dart';
+import '../models/sparepart_service_models.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../ui/widgets/order_kerja/tambah_pekerjaan_sheet.dart';
+import '../app_colors.dart';
 
 class OrderDetailViewModel extends ChangeNotifier {
   final _orderKerjaService = OrderKerjaServices();
@@ -24,6 +28,7 @@ class OrderDetailViewModel extends ChangeNotifier {
 
   List<OrderServiceSummary> daftarOrder = [];
   List<OrderServiceDetail> daftarDetail = [];
+  Map<String, List<SparepartService>> sparepartMap = {}; // Menampung sparepart per detail.id
   List<ServiceReminderItem> _serviceReminders = [];
 
   bool isLoading = false;
@@ -144,6 +149,21 @@ class OrderDetailViewModel extends ChangeNotifier {
       ]);
       daftarDetail = results[0] as List<OrderServiceDetail>;
       dataPemeriksaan = results[1] as PemeriksaanWO?;
+
+      // Load spareparts for these details
+      sparepartMap.clear();
+      if (daftarDetail.isNotEmpty) {
+        final detailIds = daftarDetail.map((d) => d.id).toList();
+        final spResponse = await Supabase.instance.client
+            .from('sparepart_service')
+            .select()
+            .inFilter('order_service_detail_id', detailIds);
+        
+        for (var row in spResponse) {
+          final sp = SparepartService.fromJson(row);
+          sparepartMap.putIfAbsent(sp.orderServiceDetailId, () => []).add(sp);
+        }
+      }
     } catch (e) {
       errorMessage = 'Gagal memuat detail: $e';
     }
@@ -243,6 +263,28 @@ class OrderDetailViewModel extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// Menampilkan popup penambahan pekerjaan baru dan memproses hasilnya (UI Logic)
+  Future<void> showTambahPekerjaanSheetUI(BuildContext context, int nomorWo) async {
+    final hasil = await TambahPekerjaanSheet.show(context);
+    if (hasil == null || !context.mounted) return;
+    
+    final sukses = await tambahPekerjaanBaru(
+      nomorWo      : nomorWo,
+      orderKerjaId : hasil['id'] as String,
+      namaPekerjaan: hasil['nama'] as String,
+      hargaFinal   : hasil['hargaFinal'] as int,
+    );
+    
+    if (!context.mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(sukses
+          ? '✅ "${hasil['nama']}" berhasil ditambahkan'
+          : '⚠️ Gagal menambahkan pekerjaan'),
+      backgroundColor: sukses ? AppColors.green : AppColors.urgentBg,
+    ));
   }
 
   Future<bool> ubahHargaPekerjaan(

@@ -36,10 +36,10 @@ class OrderKerjaDraftCache {
     required String keluhan,
   }) {
     _drafts[nomorRangka] = OrderKerjaDraft(
-      keranjangJasa: List.from(vm.keranjangJasa),
+      keranjangJasa: List<OrderKerja>.from(vm.keranjangJasa),
       sparepartPerPekerjaan: Map.from(
         vm.sparepartPerPekerjaan.map(
-          (key, entries) => MapEntry(key, List.from(entries)),
+          (key, entries) => MapEntry(key, List<SparepartEntry>.from(entries)),
         ),
       ),
       hargaJasaCustom: Map.from(vm.hargaJasaCustom),
