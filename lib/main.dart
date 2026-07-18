@@ -7,12 +7,11 @@ import 'ui/menu/edit_car_screen.dart';
 import 'ui/menu/service_screen.dart';
 import 'viewModel/auth_viewmodel.dart'; 
 import 'ui/login.dart';
-import 'ui/register.dart';
 import 'role_router.dart'; 
 import 'ui/menu/home.dart';
 import 'viewModel/car_viewmodel.dart';
 import 'viewModel/menu_sidebar_viewmodel.dart';
-import 'viewModel/order_kerja_viewmodel.dart';
+import 'viewModel/order_kerja/order_kerja_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,7 +49,6 @@ class ServiceApp extends StatelessWidget {
 
         routes: {
           '/login': (context) => LoginScreen(), 
-          '/register': (context) => RegisterScreen(),
           '/role_router': (context) => const RoleRouter(),
           '/admin_dashboard': (context) => const AdminDashboard(),
           '/add_car': (context) => const AddCarScreen(),

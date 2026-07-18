@@ -3,7 +3,7 @@ import '../../app_animations.dart';
 import '../../models/service_details_models.dart';
 import '../../models/customer_models.dart';
 import '../../models/pemeriksaan_wo_models.dart';
-import '../../viewModel/order_detail_viewmodel.dart';
+import '../../viewModel/order_detail/order_detail_viewmodel.dart';
 import '../../services/pdf_printer_service.dart';
 import '../../services/work_order_filler.dart';
 import 'package:intl/intl.dart';
@@ -11,11 +11,14 @@ import '../../app_colors.dart';
 import '../widgets/car_information_card.dart';
 import '../widgets/tabel_pekerjaan.dart';
 import '../dialogs/work_order_dialogs.dart';
-import '../../viewModel/invoice_viewmodel.dart';
+import '../../viewModel/order_detail/invoice_viewmodel.dart';
+import '../../viewModel/order_detail/pemeriksaan_viewmodel.dart';
+import '../../viewModel/order_detail/service_reminder_viewmodel.dart';
 import '../widgets/tabel_invoice.dart';
 
 class OrderItemDetailScreen extends StatefulWidget {
   final OrderDetailViewModel vm;
+  final ServiceReminderViewModel reminderVm;
   final int nomorWo;
   final DateTime tanggal;
   final Customer customer;
@@ -23,6 +26,7 @@ class OrderItemDetailScreen extends StatefulWidget {
   const OrderItemDetailScreen({
     Key? key,
     required this.vm,
+    required this.reminderVm,
     required this.nomorWo,
     required this.tanggal,
     required this.customer,
@@ -35,6 +39,7 @@ class OrderItemDetailScreen extends StatefulWidget {
 class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
   bool _isCetakLoading = false;
   final _invoiceVm = InvoiceViewModel();
+  final _pemeriksaanVm = PemeriksaanViewModel();
 
   @override
   void initState() {
@@ -42,6 +47,7 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.vm.muatDetail(widget.nomorWo);
       _invoiceVm.muatInvoice(widget.nomorWo);
+      _pemeriksaanVm.muatPemeriksaan(widget.nomorWo);
     });
   }
 
@@ -49,7 +55,7 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
       'WO-${widget.tanggal.year}-${widget.nomorWo.toString().padLeft(4, '0')}';
 
   String _getOdometer() {
-    return '${NumberFormat('#,###').format(widget.vm.kmTerakhir)} km';
+    return '${NumberFormat('#,###').format(widget.reminderVm.kmTerakhir)} km';
   }
 
   Future<void> _handleCetakWO({bool isFinalisasi = false}) async {
@@ -62,14 +68,14 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
     if (isFinalisasi) {
       final res = await WorkOrderDialogs.showCetakWorkOrderDialog(
         context,
-        prefill: widget.vm.dataPemeriksaan, // auto-fill dari data sebelumnya
+        prefill: _pemeriksaanVm.dataPemeriksaan, // auto-fill dari data sebelumnya
       );
       if (res == null || !context.mounted) return;
       formResult = res;
 
       // Simpan data pemeriksaan ke database
       final pemeriksaanBaru = PemeriksaanWO(
-        id             : widget.vm.dataPemeriksaan?.id ?? '',
+        id             : _pemeriksaanVm.dataPemeriksaan?.id ?? '',
         nomorWo        : widget.nomorWo,
         batteryAwal    : double.tryParse(formResult['batteryAwal'] ?? ''),
         batteryStater  : double.tryParse(formResult['batteryStater'] ?? ''),
@@ -88,10 +94,10 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
         catatanTambahan: formResult['catatanTambahan'],
         namaMekanik    : formResult['namaMekanik'],
         namaForeman    : formResult['namaForeman'],
-        createdAt      : widget.vm.dataPemeriksaan?.createdAt ?? DateTime.now(),
+        createdAt      : _pemeriksaanVm.dataPemeriksaan?.createdAt ?? DateTime.now(),
         updatedAt      : DateTime.now(),
       );
-      await widget.vm.simpanPemeriksaan(pemeriksaanBaru);
+      await _pemeriksaanVm.simpanPemeriksaan(pemeriksaanBaru);
     }
 
     setState(() => _isCetakLoading = true);
@@ -103,7 +109,7 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
       // dataPemeriksaan dari DB selalu menjadi fallback:
       // - Saat isFinalisasi: formResult jadi sumber utama, DB sebagai isian default jika form kosong
       // - Saat print biasa / history: formResult kosong {}, sehingga semua data dari DB
-      final p = widget.vm.dataPemeriksaan;
+      final p = _pemeriksaanVm.dataPemeriksaan;
 
       final Map<int, String> spTexts = {};
       for (int i = 0; i < details.length; i++) {

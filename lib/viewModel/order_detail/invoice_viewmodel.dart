@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/invoice_models.dart';
-import '../services/invoice_services.dart';
-import '../ui/dialogs/form_invoice.dart';
-import '../app_colors.dart';
+import '../../models/invoice_models.dart';
+import '../../services/invoice_services.dart';
+import '../../ui/dialogs/form_invoice.dart';
+import '../../app_colors.dart';
 
 class InvoiceViewModel extends ChangeNotifier {
   final InvoiceServices _service = InvoiceServices();

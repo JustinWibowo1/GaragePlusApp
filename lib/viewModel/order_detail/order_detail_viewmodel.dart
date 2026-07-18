@@ -1,35 +1,23 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
-import '../models/order_service_models.dart';
-import '../models/service_details_models.dart';
-import '../models/order_kerja_models.dart';
-import '../models/pemeriksaan_wo_models.dart';
-import '../services/order_kerja_services.dart';
-import '../services/customer_services.dart';
-import '../services/service_details_services.dart';
-import '../services/order_service_services.dart';
-import '../services/pemeriksaan_wo_service.dart';
-import '../models/sparepart_service_models.dart';
+import '../../models/order_service_models.dart';
+import '../../models/service_details_models.dart';
+import '../../services/service_details_services.dart';
+import '../../services/order_service_services.dart';
+import '../../models/sparepart_service_models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../ui/widgets/order_kerja/tambah_pekerjaan_sheet.dart';
-import '../app_colors.dart';
+import '../../ui/widgets/order_kerja/tambah_pekerjaan_sheet.dart';
+import '../../app_colors.dart';
 
 class OrderDetailViewModel extends ChangeNotifier {
-  final _orderKerjaService = OrderKerjaServices();
-  final _customerService = CarService();
   final _orderServiceDetailService = OrderServiceDetailServices();
   final _orderServiceService = OrderServiceServices();
-  final _pemeriksaanService = PemeriksaanWOService();
 
-  // ── State: Pemeriksaan WO ──────────────────────────
-  PemeriksaanWO? dataPemeriksaan;
-  bool _isLoadingPemeriksaan = false;
-  bool get isLoadingPemeriksaan => _isLoadingPemeriksaan;
+
 
   List<OrderServiceSummary> daftarOrder = [];
   List<OrderServiceDetail> daftarDetail = [];
   Map<String, List<SparepartService>> sparepartMap = {}; // Menampung sparepart per detail.id
-  List<ServiceReminderItem> _serviceReminders = [];
+
 
   bool isLoading = false;
   String? errorMessage;
@@ -38,38 +26,7 @@ class OrderDetailViewModel extends ChangeNotifier {
   int get itemSelesai =>
       daftarDetail.where((d) => d.status == StatusItem.selesai).length;
   double get progress => totalItem == 0 ? 0 : itemSelesai / totalItem;
-  int _kmTerakhir = 0;
-  int get kmTerakhir => _kmTerakhir;
 
-  List<ServiceReminderItem> get serviceReminders {
-    if (_serviceReminders.isEmpty) return [];
-
-    // Sort so overdue/urgent ones are on top
-    final result = List<ServiceReminderItem>.from(_serviceReminders);
-    result.sort((a, b) {
-      if (a.isOverdue && !b.isOverdue) return -1;
-      if (!a.isOverdue && b.isOverdue) return 1;
-
-      final aVal = a.sisaHari != null && a.sisaHari! < (a.sisaKm ?? 999999)
-          ? a.sisaHari!
-          : (a.sisaKm ?? 999999);
-      final bVal = b.sisaHari != null && b.sisaHari! < (b.sisaKm ?? 999999)
-          ? b.sisaHari!
-          : (b.sisaKm ?? 999999);
-
-      return aVal.compareTo(bVal);
-    });
-    return result;
-  }
-
-  Future<void> _muatServiceReminders(String customerId) async {
-    try {
-      _serviceReminders =
-          await _orderKerjaService.fetchServiceReminders(customerId);
-    } catch (e) {
-      _serviceReminders = [];
-    }
-  }
 
   Future<void> muatOrderByCustomer(
     String customerId, {
@@ -83,17 +40,9 @@ class OrderDetailViewModel extends ChangeNotifier {
     try {
       final results = await Future.wait([
         _orderServiceService.fetchOrderByCustomer(customerId),
-        _muatServiceReminders(customerId),
-        _customerService.fetchOdometer(customerId),
       ]);
 
-      final kmDariCustomer = results[2] as int;
-      daftarOrder = results[0] as List<OrderServiceSummary>;
-
-      final kmDariOrder = daftarOrder.isEmpty
-          ? 0
-          : daftarOrder.map((o) => o.kilometer).reduce(max);
-      _kmTerakhir = max(kmDariCustomer, kmDariOrder);
+      daftarOrder = results[0];
     } catch (e) {
       errorMessage = 'Gagal memuat data: $e';
     }
@@ -142,13 +91,11 @@ class OrderDetailViewModel extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
     try {
-      // Muat detail pekerjaan dan data pemeriksaan secara paralel
+      // Muat detail pekerjaan
       final results = await Future.wait([
         _orderServiceDetailService.fetchDetailByNomorWo(nomorWo),
-        _pemeriksaanService.fetchByNomorWo(nomorWo),
       ]);
-      daftarDetail = results[0] as List<OrderServiceDetail>;
-      dataPemeriksaan = results[1] as PemeriksaanWO?;
+      daftarDetail = results[0];
 
       // Load spareparts for these details
       sparepartMap.clear();
@@ -172,22 +119,7 @@ class OrderDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> simpanPemeriksaan(PemeriksaanWO data) async {
-    _isLoadingPemeriksaan = true;
-    notifyListeners();
-    try {
-      final result = await _pemeriksaanService.upsert(data);
-      if (result == null) throw Exception('Upsert gagal');
-      dataPemeriksaan = result;
-      return true;
-    } catch (e) {
-      errorMessage = 'Gagal menyimpan pemeriksaan: $e';
-      return false;
-    } finally {
-      _isLoadingPemeriksaan = false;
-      notifyListeners();
-    }
-  }
+
 
   Future<void> ubahStatusItem({
     required int nomorWo,
@@ -416,20 +348,4 @@ class OrderDetailViewModel extends ChangeNotifier {
     }
   }
 
-  int hitungSisaKilometer(int odometerInputUser) {
-    return kmTerakhir - odometerInputUser;
-  }
-
-  String getPesanReminder(int odometerInputUser) {
-    if (kmTerakhir == 0) return 'Target odometer belum diatur';
-
-    final sisa = hitungSisaKilometer(odometerInputUser);
-    if (sisa < 0) {
-      return 'OVERDUE: Terlewat ${sisa.abs()} km dari jadwal service';
-    } else if (sisa <= 1500) {
-      return 'SEGERA: Sisa $sisa km menuju service';
-    } else {
-      return 'Aman: Sisa $sisa km menuju service';
-    }
-  }
 }

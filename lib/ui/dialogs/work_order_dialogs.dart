@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../../app_colors.dart';
 import '../../models/service_details_models.dart';
 import '../../models/pemeriksaan_wo_models.dart';
-import '../../viewModel/order_detail_viewmodel.dart';
+import '../../viewModel/order_detail/order_detail_viewmodel.dart';
 import '../../utils/formatters.dart';
 
 class WorkOrderDialogs {

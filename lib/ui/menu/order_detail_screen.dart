@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:math';
 import '../../models/order_service_models.dart';
 import '../../models/customer_models.dart';
-import '../../viewModel/order_detail_viewmodel.dart';
+import '../../viewModel/order_detail/order_detail_viewmodel.dart';
+import '../../viewModel/order_detail/service_reminder_viewmodel.dart';
 import 'order_item_detail_screen.dart';
 import '../../app_colors.dart';
 import '../../component_apps.dart';
@@ -24,6 +26,7 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final OrderDetailViewModel _vm = OrderDetailViewModel();
+  final ServiceReminderViewModel _reminderVm = ServiceReminderViewModel();
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
@@ -34,7 +37,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       widget.customer.nomorRangka,
       tipeMesin: widget.customer.tipeMesin,
       tipeTransmisi: widget.customer.tipeTransmisi,
-    );
+    ).then((_) {
+      // Dapatkan max km dari daftar order
+      final kmDariOrder = _vm.daftarOrder.isEmpty 
+          ? 0 
+          : _vm.daftarOrder.map((o) => o.kilometer).reduce(max);
+      _reminderVm.muatRemindersDanKm(widget.customer.nomorRangka, kmDariOrder);
+    });
     _searchCtrl.addListener(
       () => setState(() => _searchQuery = _searchCtrl.text.toLowerCase()),
     );
@@ -43,6 +52,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   @override
   void dispose() {
     _vm.dispose();
+    _reminderVm.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -66,6 +76,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       AppSlideUpRoute(
         page: OrderItemDetailScreen(
           vm: _vm,
+          reminderVm: _reminderVm,
           nomorWo: order.nomorWo,
           tanggal: order.tanggalMasuk,
           customer: widget.customer,
@@ -81,9 +92,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: ListenableBuilder(
-          listenable: _vm,
+          listenable: Listenable.merge([_vm, _reminderVm]),
           builder: (context, _) {
-            final reminders = _vm.serviceReminders
+            final reminders = _reminderVm.serviceReminders
                 .where((r) => r.isOverdue || r.isUrgent)
                 .toList();
 
@@ -93,7 +104,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   child: HeroHeader(
                     customer: widget.customer,
                     totalVisit: _vm.daftarOrder.length,
-                    kmTerakhir: _vm.kmTerakhir,
+                    kmTerakhir: _reminderVm.kmTerakhir,
                   ),
                 ),
                 SliverToBoxAdapter(
