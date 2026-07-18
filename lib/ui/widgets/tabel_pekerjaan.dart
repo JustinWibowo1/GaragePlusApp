@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../app_colors.dart';
+import '../../component/app_colors.dart';
 import '../../models/service_details_models.dart';
 import '../../viewModel/order_detail/order_detail_viewmodel.dart';
 import '../dialogs/work_order_dialogs.dart';

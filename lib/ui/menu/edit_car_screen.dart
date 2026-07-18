@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../app_animations.dart';
+import '../../component/app_animations.dart';
 import '../../viewModel/menu_sidebar_viewmodel.dart';
 import '../../viewModel/car_viewmodel.dart';
-import '../../app_colors.dart';
+import '../../component/app_colors.dart';
 
 class EditCarScreen extends StatefulWidget {
   final Map<String, dynamic>? carData;

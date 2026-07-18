@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../app_animations.dart';
+import '../../component/app_animations.dart';
 import '../../models/service_details_models.dart';
 import '../../models/customer_models.dart';
 import '../../models/pemeriksaan_wo_models.dart';
@@ -7,7 +7,7 @@ import '../../viewModel/order_detail/order_detail_viewmodel.dart';
 import '../../services/pdf_printer_service.dart';
 import '../../services/work_order_filler.dart';
 import 'package:intl/intl.dart';
-import '../../app_colors.dart';
+import '../../component/app_colors.dart';
 import '../widgets/car_information_card.dart';
 import '../widgets/tabel_pekerjaan.dart';
 import '../dialogs/work_order_dialogs.dart';

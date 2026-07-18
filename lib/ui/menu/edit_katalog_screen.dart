@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../app_colors.dart';
+import '../../component/app_colors.dart';
 import '../../models/order_kerja_models.dart';
 import '../../viewModel/edit_katalog_viewmodel.dart';
 import '../menu_sidebar.dart';

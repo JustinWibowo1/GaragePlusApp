@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewModel/menu_sidebar_viewmodel.dart';
-import '../app_colors.dart';
+import '../component/app_colors.dart';
 
 class CustomSidebar extends StatelessWidget {
   const CustomSidebar({super.key});

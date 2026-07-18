@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../app_colors.dart';
+import '../../component/app_colors.dart';
 
 class VehiclePassportCard extends StatelessWidget {
   final String merkMobil;

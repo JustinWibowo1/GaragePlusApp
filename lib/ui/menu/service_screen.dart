@@ -6,8 +6,8 @@ import 'order_detail_screen.dart';
 import 'order_kerja_screen.dart';
 import '../../viewModel/menu_sidebar_viewmodel.dart';
 import 'edit_car_screen.dart';
-import '../../app_colors.dart';
-import '../../component_apps.dart';
+import '../../component/app_colors.dart';
+import '../../component/component_apps.dart';
 
 class ServicesScreen extends StatefulWidget {
   const ServicesScreen({super.key});

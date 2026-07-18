@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../app_colors.dart';
-import '../../../component_apps.dart';
+import '../../../component/app_colors.dart';
+import '../../../component/component_apps.dart';
 import '../../../viewModel/order_kerja/order_kerja_viewmodel.dart';
 import 'service_card_item.dart';
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../app_colors.dart';
+import '../../../component/app_colors.dart';
+import '../../../utils/formatters.dart';
 import '../../../models/customer_models.dart';
-import '../../../component_apps.dart';
+import '../../../component/component_apps.dart';
 
 class HeroHeader extends StatelessWidget {
   final Customer customer;

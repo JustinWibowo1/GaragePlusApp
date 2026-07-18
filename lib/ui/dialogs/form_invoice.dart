@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../app_colors.dart';
+import '../../component/app_colors.dart';
 
 class FormInvoiceDialog extends StatefulWidget {
   const FormInvoiceDialog({Key? key}) : super(key: key);

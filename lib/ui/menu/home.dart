@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-import '../../app_animations.dart';
-import '../../app_colors.dart';
+import '../../component/app_animations.dart';
+import '../../component/app_colors.dart';
 import '../../viewModel/dashboard_viewmodel.dart';
 import '../../models/service_logistic_models.dart';
 import 'add_car.dart';

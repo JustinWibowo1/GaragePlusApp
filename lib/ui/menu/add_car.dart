@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../app_animations.dart';
+import '../../component/app_animations.dart';
 import '../../viewModel/car_viewmodel.dart';
 import '../../viewModel/menu_sidebar_viewmodel.dart';
 

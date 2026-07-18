@@ -6,7 +6,7 @@ import '../../services/order_service_services.dart';
 import '../../models/sparepart_service_models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ui/widgets/order_kerja/tambah_pekerjaan_sheet.dart';
-import '../../app_colors.dart';
+import '../../component/app_colors.dart';
 
 class OrderDetailViewModel extends ChangeNotifier {
   final _orderServiceDetailService = OrderServiceDetailServices();

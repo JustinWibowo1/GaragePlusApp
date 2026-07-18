@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../app_colors.dart';
-import '../../../component_apps.dart';
+import '../../../component/app_colors.dart';
+import '../../../component/component_apps.dart';
 import '../../../models/order_service_models.dart';
 
 const List<String> _kMonths = [
