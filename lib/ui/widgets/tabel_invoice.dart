@@ -117,7 +117,9 @@ class TabelInvoice extends StatelessWidget {
                         tooltip: 'Opsi',
                         padding: EdgeInsets.zero,
                         onSelected: (value) async {
-                          if (value == 'delete') {
+                          if (value == 'edit') {
+                            await vm.showEditInvoiceDialog(context, item);
+                          } else if (value == 'delete') {
                             final confirm = await showDialog<bool>(
                               context: context,
                               builder: (ctx) => AlertDialog(
@@ -150,6 +152,16 @@ class TabelInvoice extends StatelessWidget {
                           }
                         },
                         itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined, size: 18, color: AppColors.primaryBlue),
+                                SizedBox(width: 8),
+                                Text('Edit', style: TextStyle(color: AppColors.primaryBlue)),
+                              ],
+                            ),
+                          ),
                           const PopupMenuItem(
                             value: 'delete',
                             child: Row(

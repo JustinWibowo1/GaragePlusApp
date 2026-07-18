@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../component/app_colors.dart';
+import '../../models/invoice_models.dart';
 
 class FormInvoiceDialog extends StatefulWidget {
-  const FormInvoiceDialog({Key? key}) : super(key: key);
+  final InvoiceItem? prefill;
 
-  static Future<Map<String, dynamic>?> show(BuildContext context) {
+  const FormInvoiceDialog({Key? key, this.prefill}) : super(key: key);
+
+  static Future<Map<String, dynamic>?> show(BuildContext context, {InvoiceItem? prefill}) {
     return showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const FormInvoiceDialog(),
+      builder: (context) => FormInvoiceDialog(prefill: prefill),
     );
   }
 
@@ -30,6 +33,15 @@ class _FormInvoiceDialogState extends State<FormInvoiceDialog> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.prefill != null) {
+      _namaController.text = widget.prefill!.namaPekerjaan;
+      _hargaController.text = _formatNumber(widget.prefill!.harga.toString());
+    }
+  }
+
+  @override
   void dispose() {
     _namaController.dispose();
     _hargaController.dispose();
@@ -40,7 +52,7 @@ class _FormInvoiceDialogState extends State<FormInvoiceDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      title: const Text('Tambah Invoice Custom'),
+      title: Text(widget.prefill == null ? 'Tambah Invoice Custom' : 'Edit Invoice Custom'),
       content: SizedBox(
         width: 400, // Memberikan sedikit ruang lega untuk dialog
         child: Form(

@@ -8,7 +8,7 @@ import '../../viewModel/order_detail/service_reminder_viewmodel.dart';
 import 'order_item_detail_screen.dart';
 import '../../component/app_colors.dart';
 import '../../component/component_apps.dart';
-import '../widgets/order_detail/hero_header.dart';
+import '../widgets/order_detail/riwayat_service_header.dart';
 import '../widgets/order_detail/service_reminder_panel.dart';
 import '../widgets/order_detail/service_history_card.dart';
 
@@ -101,7 +101,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
-                  child: HeroHeader(
+                  child: RiwayatService(
                     customer: widget.customer,
                     totalVisit: _vm.daftarOrder.length,
                     kmTerakhir: _reminderVm.kmTerakhir,

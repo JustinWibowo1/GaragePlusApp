@@ -125,7 +125,8 @@ class WorkOrderDialogs {
   // ── Dialog Edit Harga ───────────────────────────────────────────────
   static Future<void> showEditHargaDialog(
       BuildContext context, OrderDetailViewModel vm, OrderServiceDetail item) async {
-    final hargaController = TextEditingController(text: item.hargaFinal.toString());
+    final hargaAwal = item.hargaFinal.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+    final hargaController = TextEditingController(text: hargaAwal);
 
     final result = await showDialog<int>(
       context: context,
@@ -154,7 +155,9 @@ class WorkOrderDialogs {
               TextField(
                 controller: hargaController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsSeparatorFormatter()],
                 decoration: InputDecoration(
+                  prefixText: 'Rp ',
                   filled: true,
                   fillColor: Colors.grey.shade50,
                   border: OutlineInputBorder(
@@ -182,7 +185,7 @@ class WorkOrderDialogs {
                 elevation: 0,
               ),
               onPressed: () {
-                final hargaBaru = int.tryParse(hargaController.text) ?? 0;
+                final hargaBaru = int.tryParse(hargaController.text.replaceAll('.', '')) ?? 0;
                 Navigator.pop(ctx, hargaBaru);
               },
               child: const Text(

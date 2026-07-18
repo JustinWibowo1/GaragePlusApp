@@ -45,6 +45,24 @@ class InvoiceServices {
     }
   }
 
+  /// Mengubah nama atau harga invoice item berdasarkan id
+  Future<bool> updateInvoice({
+    required String id,
+    required String namaBaru,
+    required int hargaBaru,
+  }) async {
+    try {
+      await _supabase.from(_table).update({
+        'nama_pekerjaan': namaBaru,
+        'harga': hargaBaru,
+      }).eq('id', id);
+      return true;
+    } catch (e) {
+      print('ERROR updateInvoice: $e');
+      return false;
+    }
+  }
+
   /// Menghapus invoice item berdasarkan id
   Future<bool> deleteInvoice(String id) async {
     try {

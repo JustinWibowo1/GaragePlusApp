@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../component/app_colors.dart';
-import '../../../utils/formatters.dart';
 import '../../../models/customer_models.dart';
 import '../../../component/component_apps.dart';
 
-class HeroHeader extends StatelessWidget {
+class RiwayatService extends StatelessWidget {
   final Customer customer;
   final int totalVisit;
   final int kmTerakhir;
 
-  const HeroHeader({
+  const RiwayatService({
     Key? key,
     required this.customer,
     required this.totalVisit,

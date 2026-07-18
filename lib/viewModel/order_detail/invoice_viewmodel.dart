@@ -91,6 +91,77 @@ class InvoiceViewModel extends ChangeNotifier {
     }
   }
 
+  /// Menampilkan dialog edit invoice dan memproses hasilnya
+  Future<void> showEditInvoiceDialog(BuildContext context, InvoiceItem item) async {
+    final hasil = await FormInvoiceDialog.show(context, prefill: item);
+    if (hasil == null || !context.mounted) return;
+
+    final nama = hasil['nama'] as String;
+    final harga = hasil['harga'] as int;
+
+    // Jika tidak ada perubahan
+    if (nama == item.namaPekerjaan && harga == item.harga) return;
+
+    final sukses = await editInvoice(
+      id: item.id,
+      namaBaru: nama,
+      hargaBaru: harga,
+    );
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(sukses 
+              ? '✅ Invoice berhasil diperbarui' 
+              : '⚠️ Gagal memperbarui invoice'),
+          backgroundColor: sukses ? AppColors.green : AppColors.urgentBg,
+        )
+      );
+    }
+  }
+
+  /// Memperbarui invoice di database dan mengupdate list
+  Future<bool> editInvoice({
+    required String id,
+    required String namaBaru,
+    required int hargaBaru,
+  }) async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      final sukses = await _service.updateInvoice(
+        id: id,
+        namaBaru: namaBaru,
+        hargaBaru: hargaBaru,
+      );
+
+      if (sukses) {
+        final index = daftarInvoice.indexWhere((i) => i.id == id);
+        if (index != -1) {
+          final lama = daftarInvoice[index];
+          daftarInvoice[index] = InvoiceItem(
+            id: lama.id,
+            nomorWo: lama.nomorWo,
+            namaPekerjaan: namaBaru,
+            harga: hargaBaru,
+            createdAt: lama.createdAt,
+          );
+        }
+        return true;
+      } else {
+        errorMessage = 'Gagal memperbarui invoice.';
+        return false;
+      }
+    } catch (e) {
+      errorMessage = 'Terjadi kesalahan: $e';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Menghapus invoice berdasarkan ID dan mengupdate list
   Future<bool> hapusInvoice(String id) async {
     isLoading = true;
