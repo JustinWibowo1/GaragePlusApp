@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import '../../component/app_animations.dart';
 import '../../models/service_details_models.dart';
 import '../../models/customer_models.dart';
-import '../../models/pemeriksaan_wo_models.dart';
 import '../../viewModel/order_detail/order_detail_viewmodel.dart';
 import '../../services/pdf_printer_service.dart';
-import '../../services/work_order_filler.dart';
 import 'package:intl/intl.dart';
 import '../../component/app_colors.dart';
 import '../widgets/car_information_card.dart';
@@ -13,6 +11,7 @@ import '../widgets/tabel_pekerjaan.dart';
 import '../dialogs/work_order_dialogs.dart';
 import '../../viewModel/order_detail/invoice_viewmodel.dart';
 import '../../viewModel/order_detail/pemeriksaan_viewmodel.dart';
+import '../dialogs/status_popup.dart';
 import '../../viewModel/order_detail/service_reminder_viewmodel.dart';
 import '../widgets/tabel_invoice.dart';
 
@@ -65,92 +64,21 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
 
     Map<String, String> formResult = {};
 
-    if (isFinalisasi) {
-      final res = await WorkOrderDialogs.showCetakWorkOrderDialog(
-        context,
-        prefill: _pemeriksaanVm.dataPemeriksaan, // auto-fill dari data sebelumnya
-      );
-      if (res == null || !context.mounted) return;
-      formResult = res;
 
-      // Simpan data pemeriksaan ke database
-      final pemeriksaanBaru = PemeriksaanWO(
-        id             : _pemeriksaanVm.dataPemeriksaan?.id ?? '',
-        nomorWo        : widget.nomorWo,
-        batteryAwal    : double.tryParse(formResult['batteryAwal'] ?? ''),
-        batteryStater  : double.tryParse(formResult['batteryStater'] ?? ''),
-        batteryPengisian: double.tryParse(formResult['batteryPengisian'] ?? ''),
-        batteryStatus  : formResult['batteryStatus'],
-        oliMesin       : formResult['oliMesin'],
-        oliMatik       : formResult['oliMatik'],
-        coolant        : formResult['coolant'],
-        oliRemKopling  : formResult['oliRemKopling'],
-        tekananDepan   : int.tryParse(formResult['tekananDepan'] ?? ''),
-        tekananBelakang: int.tryParse(formResult['tekananBelakang'] ?? ''),
-        tekananCadangan: int.tryParse(formResult['tekananCadangan'] ?? ''),
-        torsiMur       : formResult['torsiMur'],
-        serviceBerikutKm   : int.tryParse(formResult['serviceKm']?.replaceAll('.', '') ?? ''),
-        serviceBerikutBulan: DateTime.tryParse(formResult['serviceBulan'] ?? ''),
-        catatanTambahan: formResult['catatanTambahan'],
-        namaMekanik    : formResult['namaMekanik'],
-        namaForeman    : formResult['namaForeman'],
-        createdAt      : _pemeriksaanVm.dataPemeriksaan?.createdAt ?? DateTime.now(),
-        updatedAt      : DateTime.now(),
-      );
-      await _pemeriksaanVm.simpanPemeriksaan(pemeriksaanBaru);
-    }
 
     setState(() => _isCetakLoading = true);
 
     try {
-      final details = widget.vm.daftarDetail;
-      final orderPreview = order;
-
-      // dataPemeriksaan dari DB selalu menjadi fallback:
-      // - Saat isFinalisasi: formResult jadi sumber utama, DB sebagai isian default jika form kosong
-      // - Saat print biasa / history: formResult kosong {}, sehingga semua data dari DB
-      final p = _pemeriksaanVm.dataPemeriksaan;
-
-      final Map<int, String> spTexts = {};
-      for (int i = 0; i < details.length; i++) {
-        final detail = details[i];
-        final spList = widget.vm.sparepartMap[detail.id] ?? [];
-        if (spList.isNotEmpty) {
-          spTexts[i] = spList.map((s) => s.namaItemSnapshot).join(', ');
-        }
-      }
-
-      final pdfBytes = await WorkOrderFiller.fill(
-        order: orderPreview,
-        details: details,
-        sparepartTexts: spTexts,
-        namaPemilik: widget.customer.namaPemilik,
-        nomorPolisi: widget.customer.nomorPolisi,
-        telepon: widget.customer.noTelepon ?? '',
-        alamat: widget.customer.alamatLengkap,
-        merkMobil: widget.customer.jenisMobil,
-        typeMobil: widget.customer.tipeMobil,
-        tahun: widget.customer.tahun.toString(),
-        noRangka: widget.customer.nomorRangka,
-        noMesin: widget.customer.nomorMesin,
-        batteryAwal      : formResult['batteryAwal']      ?? p?.batteryAwal?.toString()      ?? '',
-        batteryStater    : formResult['batteryStater']    ?? p?.batteryStater?.toString()    ?? '',
-        batteryPengisian : formResult['batteryPengisian'] ?? p?.batteryPengisian?.toString() ?? '',
-        batteryStatus    : formResult['batteryStatus']    ?? p?.batteryStatus                ?? 'Normal',
-        oliMesin         : formResult['oliMesin']         ?? p?.oliMesin                     ?? 'Cukup',
-        oliMatik         : formResult['oliMatik']         ?? p?.oliMatik                     ?? 'X',
-        coolant          : formResult['coolant']          ?? p?.coolant                      ?? 'Cukup',
-        oliRemKopling    : formResult['oliRemKopling']    ?? p?.oliRemKopling                ?? 'Cukup',
-        tekananDepan     : formResult['tekananDepan']     ?? p?.tekananDepan?.toString()     ?? '',
-        tekananBelakang  : formResult['tekananBelakang']  ?? p?.tekananBelakang?.toString()  ?? '',
-        tekananCadangan  : formResult['tekananCadangan']  ?? p?.tekananCadangan?.toString()  ?? '',
-        torsiMur         : formResult['torsiMur']         ?? p?.torsiMur?.toString()         ?? '',
-        serviceKm        : formResult['serviceKm']        ?? p?.serviceBerikutKm?.toString() ?? '',
-        serviceBulan     : (formResult['serviceBulan'] ?? (p?.serviceBerikutBulan != null ? "${p!.serviceBerikutBulan!.year}-${p.serviceBerikutBulan!.month.toString().padLeft(2, '0')}-${p.serviceBerikutBulan!.day.toString().padLeft(2, '0')}" : '')).replaceAll('-', '/'),
-        catatanTambahan  : formResult['catatanTambahan']  ?? p?.catatanTambahan              ?? '',
-        namaMekanik      : formResult['namaMekanik']      ?? p?.namaMekanik                  ?? '',
-        namaForeman      : formResult['namaForeman']      ?? p?.namaForeman                  ?? '',
+      final pdfBytes = await widget.vm.generatePdfBytes(
+        nomorWo: widget.nomorWo,
+        customer: widget.customer,
+        dataPemeriksaan: _pemeriksaanVm.dataPemeriksaan,
+        formResult: formResult,
       );
+      
+      if (pdfBytes == null) {
+        throw Exception('Gagal membuat file PDF');
+      }
 
       if (!context.mounted) return;
 
@@ -383,17 +311,65 @@ class _OrderItemDetailScreenState extends State<OrderItemDetailScreen> {
                           ),
                         ),
                         if (!isHistory)
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text('Tambah Pekerjaan / Part'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.navy,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          Row(
+                            children: [
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.assignment_turned_in_outlined, size: 16),
+                                label: const Text('Pemeriksaan Umum'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: AppColors.primaryBlue,
+                                  side: const BorderSide(color: AppColors.primaryBlue),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  final res = await WorkOrderDialogs.showCetakWorkOrderDialog(
+                                    context,
+                                    prefill: _pemeriksaanVm.dataPemeriksaan,
+                                  );
+                                  if (res != null && context.mounted) {
+                                    // Panggil ViewModel untuk memproses data mentah (MVVM)
+                                    final sukses = await _pemeriksaanVm.prosesDanSimpanForm(widget.nomorWo, res);
+                                    
+                                    if (context.mounted) {
+                                      if (sukses) {
+                                        await StatusPopup.show(
+                                          context,
+                                          isSuccess: true,
+                                          message: 'Pemeriksaan berhasil disimpan',
+                                        );
+                                      } else {
+                                        await StatusPopup.show(
+                                          context,
+                                          isSuccess: false,
+                                          message: _pemeriksaanVm.errorMessage ?? 'Gagal menyimpan pemeriksaan',
+                                        );
+                                      }
+                                    }
+                                  }
+                                },
                               ),
-                            ),
-                            onPressed: () => widget.vm.showTambahPekerjaanSheetUI(context, widget.nomorWo),
+                              const SizedBox(width: 12),
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.add, size: 16),
+                                label: const Text('Tambah Pekerjaan / Part'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.navy,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  await widget.vm.showTambahPekerjaanSheetUI(context, widget.nomorWo);
+                                  if (context.mounted) {
+                                    _invoiceVm.muatInvoice(widget.nomorWo);
+                                  }
+                                },
+                              ),
+                            ],
                           ),
                       ],
                     ),

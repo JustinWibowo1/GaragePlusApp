@@ -5,6 +5,7 @@ import '../../../component/app_colors.dart';
 import '../../../component/component_apps.dart';
 import '../../../viewModel/order_kerja/order_kerja_viewmodel.dart';
 import 'service_card_item.dart';
+import '../../dialogs/status_popup.dart';
 
 class ServiceCatalogList extends StatefulWidget {
   final OrderKerjaViewModel vm;
@@ -127,12 +128,7 @@ class _ServiceCatalogListState extends State<ServiceCatalogList> {
                   : () async {
                       final nama = namaCtrl.text.trim();
                       if (nama.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Nama pekerjaan tidak boleh kosong'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        await StatusPopup.show(context, isSuccess: false, message: 'Nama pekerjaan tidak boleh kosong');
                         return;
                       }
                       final hargaRaw =
@@ -165,12 +161,7 @@ class _ServiceCatalogListState extends State<ServiceCatalogList> {
                       } else {
                         if (ctx.mounted) Navigator.pop(ctx);
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Gagal menambahkan pekerjaan'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+                          await StatusPopup.show(context, isSuccess: false, message: 'Gagal menambahkan pekerjaan');
                         }
                       }
                     },

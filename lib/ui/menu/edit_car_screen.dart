@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../component/app_animations.dart';
 import '../../viewModel/menu_sidebar_viewmodel.dart';
 import '../../viewModel/car_viewmodel.dart';
+import '../dialogs/status_popup.dart';
 import '../../component/app_colors.dart';
 
 class EditCarScreen extends StatefulWidget {
@@ -112,16 +113,15 @@ class _EditCarScreenState extends State<EditCarScreen> {
 
     if (!mounted) return;
     if (success) {
-      _snack('Data mobil berhasil diperbarui');
-      Provider.of<NavigationViewModel>(context, listen: false).goToGarageList();
-      Navigator.pop(context);
+      await StatusPopup.show(context, isSuccess: true, message: 'Data mobil berhasil diperbarui');
+      if (mounted) {
+        Provider.of<NavigationViewModel>(context, listen: false).goToGarageList();
+        Navigator.pop(context);
+      }
     } else {
-      _snack(vm.errorMessage ?? 'Gagal memperbarui data mobil');
+      await StatusPopup.show(context, isSuccess: false, message: vm.errorMessage ?? 'Gagal memperbarui data mobil');
     }
   }
-
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg)));
 
   // ── Build ─────────────────────────────────────────────────
 

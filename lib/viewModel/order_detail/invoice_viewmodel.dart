@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/invoice_models.dart';
 import '../../services/invoice_services.dart';
 import '../../ui/dialogs/form_invoice.dart';
-import '../../component/app_colors.dart';
+import '../../ui/dialogs/status_popup.dart';
 
 class InvoiceViewModel extends ChangeNotifier {
   final InvoiceServices _service = InvoiceServices();
@@ -80,13 +80,10 @@ class InvoiceViewModel extends ChangeNotifier {
     );
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(sukses 
-              ? '✅ Invoice "$nama" berhasil ditambahkan' 
-              : '⚠️ Gagal menambahkan invoice'),
-          backgroundColor: sukses ? AppColors.green : AppColors.urgentBg,
-        )
+      await StatusPopup.show(
+        context,
+        isSuccess: sukses,
+        message: sukses ? 'Invoice "$nama" berhasil ditambahkan' : 'Gagal menambahkan invoice',
       );
     }
   }
@@ -109,13 +106,10 @@ class InvoiceViewModel extends ChangeNotifier {
     );
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(sukses 
-              ? '✅ Invoice berhasil diperbarui' 
-              : '⚠️ Gagal memperbarui invoice'),
-          backgroundColor: sukses ? AppColors.green : AppColors.urgentBg,
-        )
+      await StatusPopup.show(
+        context,
+        isSuccess: sukses,
+        message: sukses ? 'Invoice berhasil diperbarui' : 'Gagal memperbarui invoice',
       );
     }
   }

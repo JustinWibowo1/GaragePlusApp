@@ -118,7 +118,7 @@ class TaskLedgerTable extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '-',
+                          item.kategoriPekerjaan ?? '-',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,

@@ -38,4 +38,30 @@ class PemeriksaanViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+  Future<bool> prosesDanSimpanForm(int nomorWo, Map<String, String> formResult) async {
+    final pemeriksaanBaru = PemeriksaanWO(
+      id             : dataPemeriksaan?.id ?? '',
+      nomorWo        : nomorWo,
+      batteryAwal    : double.tryParse(formResult['batteryAwal']?.replaceAll(',', '.') ?? ''),
+      batteryStater  : double.tryParse(formResult['batteryStater']?.replaceAll(',', '.') ?? ''),
+      batteryPengisian: double.tryParse(formResult['batteryPengisian']?.replaceAll(',', '.') ?? ''),
+      batteryStatus  : formResult['batteryStatus'],
+      oliMesin       : formResult['oliMesin'],
+      oliMatik       : formResult['oliMatik'],
+      coolant        : formResult['coolant'],
+      oliRemKopling  : formResult['oliRemKopling'],
+      tekananDepan   : int.tryParse(formResult['tekananDepan'] ?? ''),
+      tekananBelakang: int.tryParse(formResult['tekananBelakang'] ?? ''),
+      tekananCadangan: int.tryParse(formResult['tekananCadangan'] ?? ''),
+      torsiMur       : formResult['torsiMur'],
+      serviceBerikutKm   : int.tryParse(formResult['serviceKm']?.replaceAll('.', '') ?? ''),
+      serviceBerikutBulan: DateTime.tryParse(formResult['serviceBulan'] ?? ''),
+      catatanTambahan: formResult['catatanTambahan'],
+      namaMekanik    : formResult['namaMekanik'],
+      namaForeman    : formResult['namaForeman'],
+      createdAt      : dataPemeriksaan?.createdAt ?? DateTime.now(),
+      updatedAt      : DateTime.now(),
+    );
+    return await simpanPemeriksaan(pemeriksaanBaru);
+  }
 }

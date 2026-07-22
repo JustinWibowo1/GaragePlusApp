@@ -4,6 +4,7 @@ import '../../models/customer_models.dart';
 import '../../viewModel/order_kerja/order_kerja_viewmodel.dart';
 import '../../viewModel/order_kerja/order_kerja_draft_cache.dart';
 import '../../component/app_colors.dart';
+import '../dialogs/status_popup.dart';
 import '../widgets/order_kerja/vehicle_info_card.dart';
 import '../widgets/order_kerja/catatan_keluhan_order.dart';
 import '../widgets/order_kerja/service_catalog_list.dart';
@@ -13,9 +14,9 @@ class OrderKerjaScreen extends StatefulWidget {
   final Customer customer;
 
   const OrderKerjaScreen({
-    Key? key,
+    super.key,
     required this.customer,
-  }) : super(key: key);
+  });
 
   @override
   State<OrderKerjaScreen> createState() => _OrderKerjaScreenState();
@@ -343,11 +344,10 @@ class _OrderKerjaScreenState extends State<OrderKerjaScreen> {
                       onCustomAdded: (hasil) {
                         // Pekerjaan custom sudah masuk ke keranjang via ViewModel.
                         // Tidak perlu Navigator.pop karena kita di halaman penuh.
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('"${hasil['nama']}" ditambahkan ke keranjang'),
-                            backgroundColor: Colors.green.shade600,
-                          ),
+                        StatusPopup.show(
+                          context,
+                          isSuccess: true,
+                          message: '"${hasil['nama']}" ditambahkan ke keranjang',
                         );
                       },
                     ),

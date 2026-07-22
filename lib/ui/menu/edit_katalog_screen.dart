@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../component/app_colors.dart';
 import '../../models/order_kerja_models.dart';
 import '../../viewModel/edit_katalog_viewmodel.dart';
+import '../dialogs/status_popup.dart';
 import '../menu_sidebar.dart';
 
 class EditKatalogScreen extends StatefulWidget {
@@ -90,9 +91,7 @@ class _EditKatalogScreenState extends State<EditKatalogScreen> {
     final sparepart = _sparepartCtrl.text.trim().isEmpty ? null : _sparepartCtrl.text.trim();
 
     if (nama.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama wajib diisi'), backgroundColor: Colors.red),
-      );
+      await StatusPopup.show(context, isSuccess: false, message: 'Nama wajib diisi');
       return;
     }
 
@@ -114,10 +113,11 @@ class _EditKatalogScreenState extends State<EditKatalogScreen> {
     }
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? (_vm.successMessage ?? 'Berhasil') : (_vm.errorMessage ?? 'Gagal')),
-      backgroundColor: ok ? Colors.green : Colors.red,
-    ));
+    await StatusPopup.show(
+      context,
+      isSuccess: ok,
+      message: ok ? (_vm.successMessage ?? 'Berhasil') : (_vm.errorMessage ?? 'Gagal'),
+    );
     if (ok) _batalForm();
   }
 
@@ -143,10 +143,11 @@ class _EditKatalogScreenState extends State<EditKatalogScreen> {
 
     final ok = await _vm.hapusPekerjaan(_dipilih!.id, _dipilih!.nama);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? (_vm.successMessage ?? 'Berhasil') : (_vm.errorMessage ?? 'Gagal')),
-      backgroundColor: ok ? Colors.green : Colors.red,
-    ));
+    await StatusPopup.show(
+      context,
+      isSuccess: ok,
+      message: ok ? (_vm.successMessage ?? 'Berhasil') : (_vm.errorMessage ?? 'Gagal'),
+    );
     if (ok) _batalForm();
   }
 

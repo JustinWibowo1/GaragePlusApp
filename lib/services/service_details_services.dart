@@ -19,7 +19,8 @@ class OrderServiceDetailServices {
             catatan_teknisi,
             created_at,
             order_kerja (
-              nama
+              nama,
+              kategori_perbaikan
             )
           ''')
           .eq('nomor_wo', nomorWo)
@@ -50,7 +51,7 @@ class OrderServiceDetailServices {
           .select('''
             id, nomor_wo, order_kerja_id, harga_final,
             status, catatan_teknisi, created_at,
-            order_kerja ( nama )
+            order_kerja ( nama, kategori_perbaikan )
           ''')
           .single();
       return OrderServiceDetail.fromJson(response);

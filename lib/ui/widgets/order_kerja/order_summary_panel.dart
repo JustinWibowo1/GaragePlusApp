@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../component/app_colors.dart';
 import '../../../models/customer_models.dart';
+import '../../../services/work_order_filler.dart';
 import '../../../viewModel/order_kerja/order_kerja_viewmodel.dart';
 import '../../../models/order_service_models.dart';
 import '../../../models/service_details_models.dart';
-import '../../../services/work_order_filler.dart';
+import '../../dialogs/status_popup.dart';
 import '../../../models/order_kerja_models.dart';
 import 'order_kerja_preview_dialog.dart';
 
@@ -15,12 +16,12 @@ class OrderSummaryPanel extends StatelessWidget {
   final TextEditingController kilometerController;
 
   const OrderSummaryPanel({
-    Key? key,
+    super.key,
     required this.vm,
     required this.customer,
     required this.keluhanController,
     required this.kilometerController,
-  }) : super(key: key);
+  });
 
   String _formatRupiah(int value) {
     return value.toString().replaceAllMapped(
@@ -334,11 +335,10 @@ class OrderSummaryPanel extends StatelessWidget {
 
   Future<void> _handlePreviewAndSave(BuildContext context) async {
     if (vm.kilometer <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Masukkan kilometer kendaraan terlebih dahulu'),
-          backgroundColor: Colors.orange,
-        ),
+      await StatusPopup.show(
+        context,
+        isSuccess: false,
+        message: 'Masukkan kilometer kendaraan terlebih dahulu',
       );
       return;
     }
@@ -421,20 +421,18 @@ class OrderSummaryPanel extends StatelessWidget {
       if (result == true && context.mounted) {
         keluhanController.clear();
         kilometerController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Order berhasil disimpan!'),
-            backgroundColor: Colors.green,
-          ),
+        await StatusPopup.show(
+          context,
+          isSuccess: true,
+          message: 'Order berhasil disimpan!',
         );
       }
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal membuat PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
+      await StatusPopup.show(
+        context,
+        isSuccess: false,
+        message: 'Gagal membuat PDF: $e',
       );
     }
   }

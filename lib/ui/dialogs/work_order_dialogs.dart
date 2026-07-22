@@ -289,7 +289,7 @@ class WorkOrderDialogs {
             children: [
               Icon(Icons.description_outlined, color: AppColors.greenDark),
               SizedBox(width: 8),
-              Text('Data Pemeriksaan WO',
+              Text('Data Pemeriksaan Umum',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
@@ -391,7 +391,7 @@ class WorkOrderDialogs {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  _dialogTextField(cCatatan, 'Catatan / Saran Tambahan', maxLines: 3),
+                  _dialogTextField(cCatatan, 'Catatan / Saran Tambahan', maxLines: 8),
                   const SizedBox(height: 12),
                   _dialogSection('👤 Personel'),
                   Row(
@@ -411,10 +411,10 @@ class WorkOrderDialogs {
               child: const Text('Batal'),
             ),
             ElevatedButton.icon(
-              icon: const Icon(Icons.print, size: 16),
-              label: const Text('Cetak WO'),
+              icon: const Icon(Icons.save, size: 16),
+              label: const Text('Simpan Data'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.greenDark,
+                backgroundColor: AppColors.primaryBlue,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../component/app_colors.dart';
 import '../../models/invoice_models.dart';
 import '../../viewModel/order_detail/invoice_viewmodel.dart';
+import '../dialogs/status_popup.dart';
 
 class TabelInvoice extends StatelessWidget {
   final InvoiceViewModel vm;
@@ -41,7 +42,7 @@ class TabelInvoice extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Expanded(flex: 3, child: _TableHeaderText('Nama Pekerjaan (Custom)')),
+                const Expanded(flex: 3, child: _TableHeaderText('Nama Pekerjaan')),
                 const Expanded(flex: 2, child: _TableHeaderText('Waktu Ditambahkan')),
                 const Expanded(flex: 2, child: _TableHeaderText('Harga')),
                 if (!isHistory)
@@ -64,6 +65,7 @@ class TabelInvoice extends StatelessWidget {
             final isLast = index == daftarInvoice.length - 1;
 
             return Container(
+              key: ValueKey(item.id),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               decoration: BoxDecoration(
                 border: isLast
@@ -114,7 +116,7 @@ class TabelInvoice extends StatelessWidget {
                       width: 32,
                       child: PopupMenuButton<String>(
                         icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textGrey),
-                        tooltip: 'Opsi',
+                        tooltip: '', // Kosongkan tooltip untuk mencegah crash saat unmount
                         padding: EdgeInsets.zero,
                         onSelected: (value) async {
                           if (value == 'edit') {
@@ -141,11 +143,10 @@ class TabelInvoice extends StatelessWidget {
                             if (confirm == true) {
                               final sukses = await vm.hapusInvoice(item.id);
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(sukses ? 'Berhasil dihapus' : 'Gagal menghapus'),
-                                    backgroundColor: sukses ? AppColors.green : AppColors.urgentBg,
-                                  )
+                                await StatusPopup.show(
+                                  context,
+                                  isSuccess: sukses,
+                                  message: sukses ? 'Berhasil dihapus' : 'Gagal menghapus',
                                 );
                               }
                             }
@@ -179,6 +180,46 @@ class TabelInvoice extends StatelessWidget {
               ),
             );
           }),
+          // Subtotal Row
+          if (daftarInvoice.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: const BoxDecoration(
+                color: AppColors.backgroundAlt,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+                border: Border(top: BorderSide(color: AppColors.border)),
+              ),
+              child: Row(
+                children: [
+                  const Expanded(
+                    flex: 5,
+                    child: Text(
+                      'SUBTOTAL INVOICE',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.navy,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                  const SizedBox(width: 16), // Jarak ke kolom harga
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'Rp ${NumberFormat('#,###', 'id_ID').format(daftarInvoice.fold<int>(0, (sum, item) => sum + item.harga))}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.orangeDark,
+                      ),
+                    ),
+                  ),
+                  if (!isHistory)
+                    const SizedBox(width: 32),
+                ],
+              ),
+            ),
         ],
       ),
     );

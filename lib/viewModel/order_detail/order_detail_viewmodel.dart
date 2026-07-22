@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import '../../models/order_service_models.dart';
 import '../../models/service_details_models.dart';
 import '../../services/service_details_services.dart';
@@ -6,7 +7,10 @@ import '../../services/order_service_services.dart';
 import '../../models/sparepart_service_models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../ui/widgets/order_kerja/tambah_pekerjaan_sheet.dart';
-import '../../component/app_colors.dart';
+import '../../models/customer_models.dart';
+import '../../models/pemeriksaan_wo_models.dart';
+import '../../services/work_order_filler.dart';
+import '../../ui/dialogs/status_popup.dart';
 
 class OrderDetailViewModel extends ChangeNotifier {
   final _orderServiceDetailService = OrderServiceDetailServices();
@@ -211,12 +215,11 @@ class OrderDetailViewModel extends ChangeNotifier {
     
     if (!context.mounted) return;
     
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(sukses
-          ? '✅ "${hasil['nama']}" berhasil ditambahkan'
-          : '⚠️ Gagal menambahkan pekerjaan'),
-      backgroundColor: sukses ? AppColors.green : AppColors.urgentBg,
-    ));
+    await StatusPopup.show(
+      context,
+      isSuccess: sukses,
+      message: sukses ? '"${hasil['nama']}" berhasil ditambahkan' : 'Gagal menambahkan pekerjaan',
+    );
   }
 
   Future<bool> ubahHargaPekerjaan(
@@ -345,6 +348,65 @@ class OrderDetailViewModel extends ChangeNotifier {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  Future<Uint8List?> generatePdfBytes({
+    required int nomorWo,
+    required Customer customer,
+    PemeriksaanWO? dataPemeriksaan,
+    Map<String, String> formResult = const {},
+  }) async {
+    try {
+      final orderIndex = daftarOrder.indexWhere((o) => o.nomorWo == nomorWo);
+      if (orderIndex == -1) throw Exception('Order tidak ditemukan');
+      final orderPreview = daftarOrder[orderIndex];
+
+      final Map<int, String> spTexts = {};
+      for (int i = 0; i < daftarDetail.length; i++) {
+        final detail = daftarDetail[i];
+        final spList = sparepartMap[detail.id] ?? [];
+        if (spList.isNotEmpty) {
+          spTexts[i] = spList.map((s) => s.namaItemSnapshot).join(', ');
+        }
+      }
+
+      final p = dataPemeriksaan;
+      
+      return await WorkOrderFiller.fill(
+        order: orderPreview,
+        details: daftarDetail,
+        sparepartTexts: spTexts,
+        namaPemilik: customer.namaPemilik,
+        nomorPolisi: customer.nomorPolisi,
+        telepon: customer.noTelepon ?? '',
+        alamat: customer.alamatLengkap,
+        merkMobil: customer.jenisMobil,
+        typeMobil: customer.tipeMobil,
+        tahun: customer.tahun.toString(),
+        noRangka: customer.nomorRangka,
+        noMesin: customer.nomorMesin,
+        batteryAwal      : formResult['batteryAwal']      ?? p?.batteryAwal?.toString()      ?? '',
+        batteryStater    : formResult['batteryStater']    ?? p?.batteryStater?.toString()    ?? '',
+        batteryPengisian : formResult['batteryPengisian'] ?? p?.batteryPengisian?.toString() ?? '',
+        batteryStatus    : formResult['batteryStatus']    ?? p?.batteryStatus                ?? 'Normal',
+        oliMesin         : formResult['oliMesin']         ?? p?.oliMesin                     ?? 'Cukup',
+        oliMatik         : formResult['oliMatik']         ?? p?.oliMatik                     ?? 'X',
+        coolant          : formResult['coolant']          ?? p?.coolant                      ?? 'Cukup',
+        oliRemKopling    : formResult['oliRemKopling']    ?? p?.oliRemKopling                ?? 'Cukup',
+        tekananDepan     : formResult['tekananDepan']     ?? p?.tekananDepan?.toString()     ?? '',
+        tekananBelakang  : formResult['tekananBelakang']  ?? p?.tekananBelakang?.toString()  ?? '',
+        tekananCadangan  : formResult['tekananCadangan']  ?? p?.tekananCadangan?.toString()  ?? '',
+        torsiMur         : formResult['torsiMur']         ?? p?.torsiMur?.toString()         ?? '',
+        serviceKm        : formResult['serviceKm']        ?? p?.serviceBerikutKm?.toString() ?? '',
+        serviceBulan     : (formResult['serviceBulan'] ?? (p?.serviceBerikutBulan != null ? "${p!.serviceBerikutBulan!.year}-${p.serviceBerikutBulan!.month.toString().padLeft(2, '0')}-${p.serviceBerikutBulan!.day.toString().padLeft(2, '0')}" : '')).replaceAll('-', '/'),
+        catatanTambahan  : formResult['catatanTambahan']  ?? p?.catatanTambahan              ?? '',
+        namaMekanik      : formResult['namaMekanik']      ?? p?.namaMekanik                  ?? '',
+        namaForeman      : formResult['namaForeman']      ?? p?.namaForeman                  ?? '',
+      );
+    } catch (e) {
+      errorMessage = 'Gagal membuat PDF: $e';
+      return null;
     }
   }
 

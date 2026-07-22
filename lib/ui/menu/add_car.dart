@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../component/app_animations.dart';
 import '../../viewModel/car_viewmodel.dart';
 import '../../viewModel/menu_sidebar_viewmodel.dart';
+import '../dialogs/status_popup.dart';
 
 class AddCarScreen extends StatefulWidget {
   const AddCarScreen({super.key});
@@ -79,13 +80,17 @@ class _AddCarScreenState extends State<AddCarScreen> {
 
     if (!mounted) return;
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Data Mobil Berhasil Disimpan!')),
+      await StatusPopup.show(
+        context,
+        isSuccess: true,
+        message: 'Data Mobil Berhasil Disimpan!',
       );
-      _goBackToHome();
+      if (mounted) _goBackToHome();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(viewModel.errorMessage ?? '❌ Gagal menyimpan data')),
+      await StatusPopup.show(
+        context,
+        isSuccess: false,
+        message: viewModel.errorMessage ?? 'Gagal menyimpan data',
       );
     }
   }

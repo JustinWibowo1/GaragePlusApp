@@ -6,7 +6,7 @@ import '../../models/invoice_models.dart';
 class FormInvoiceDialog extends StatefulWidget {
   final InvoiceItem? prefill;
 
-  const FormInvoiceDialog({Key? key, this.prefill}) : super(key: key);
+  const FormInvoiceDialog({super.key, this.prefill});
 
   static Future<Map<String, dynamic>?> show(BuildContext context, {InvoiceItem? prefill}) {
     return showDialog<Map<String, dynamic>>(
@@ -51,10 +51,12 @@ class _FormInvoiceDialogState extends State<FormInvoiceDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: Text(widget.prefill == null ? 'Tambah Invoice Custom' : 'Edit Invoice Custom'),
       content: SizedBox(
-        width: 400, // Memberikan sedikit ruang lega untuk dialog
+        width: MediaQuery.of(context).size.width * 0.6,
         child: Form(
           key: _formKey,
           child: Column(
